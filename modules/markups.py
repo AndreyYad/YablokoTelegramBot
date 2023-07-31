@@ -1,27 +1,34 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-def markup_start():
-    markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton('Что предлагает «Яблоко»', callback_data='party_program_select'))
-    markup.add(InlineKeyboardButton('Мой кандидат по округу', callback_data='z'))
-    markup.add(InlineKeyboardButton('Регистрация избирателя', callback_data='z'))
-    markup.add(InlineKeyboardButton('Я проголосовал(а)  ', callback_data='z'))
-    return markup
+class markups():
+    # Стартовое меню
+    def markup_start():
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton('Что предлагает «Яблоко»', callback_data='party_program_select'))
+        markup.add(InlineKeyboardButton('Мой кандидат по округу', callback_data='z'))
+        markup.add(InlineKeyboardButton('Регистрация избирателя', callback_data='z'))
+        markup.add(InlineKeyboardButton('Я проголосовал(а)  ', callback_data='z'))
+        return markup
 
-def markup_party_program_select():
-    markup = InlineKeyboardMarkup()
+    # Выбор части програмы партии
+    def markup_party_program_select():
+        markup = InlineKeyboardMarkup()
 
-    btn1 = InlineKeyboardButton('Федеральная часть', callback_data='party_program')
-    btn2 = InlineKeyboardButton('Городская часть', callback_data='party_program')
-    btn3 = InlineKeyboardButton('🔙Назад', callback_data='start')
+        markup.row(
+            InlineKeyboardButton('Федеральная часть', callback_data='party_program_federal'),
+            InlineKeyboardButton('Городская часть', callback_data='party_program_novgorod')
+        )
 
+        markup.row(
+            InlineKeyboardButton('🔙Назад', callback_data='start')
+        )
+
+        return markup
+
+    # Возврат к выборы части программы партии
+    def markup_party_program_back():
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton('🔙Назад', callback_data='party_program_select'))
+        return markup
     
-
-    markup.add(InlineKeyboardButton('Федеральная часть', callback_data='party_program'))
-    markup.add(InlineKeyboardButton('Городская часть', callback_data='party_program'))
-    markup.add(InlineKeyboardButton('🔙Назад', callback_data='start'))
-    return markup
-
-def markup_party_program_open():
-    markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton('🔙Назад', callback_data='party_program'))
+    # Начало регистрации
