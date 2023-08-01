@@ -1,6 +1,13 @@
 from sqlite3 import connect
 
 class sql_commands():
+    # Создание таблиц
+    def born_of_tables():
+        sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS users (id int primary key, status varchar(50))')
+        sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS bot_msg (msg_id int primary key, id int)')
+        sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS pre_reg (id int primary key, name varchar(50), address varchar(100))')
+        sql_commands.change_in_table('yabloko', 'CREATE TABLE IF NOT EXISTS voters (id int primary key, name varchar(50), address varchar(100))')
+
     # Изменения в таблице
     def change_in_table(file_name, cmd):
 

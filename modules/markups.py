@@ -34,10 +34,12 @@ class markups():
     # Начало регистрации
     def markup_want_to_registration():
         markup = InlineKeyboardMarkup()
+
         markup.row(
             InlineKeyboardButton('Да', callback_data='registration_name'),
             InlineKeyboardButton('Нет', callback_data='start')
         )
+        
         return markup
     
     # Отмена регистрации

@@ -1,10 +1,8 @@
 from aiogram import Bot
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, InlineKeyboardMarkup
 from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor, exceptions
 from aiogram.bot import bot
-
-from sqlite3 import connect
 
 from modules.config import TOKEN
 from modules.messages import MESSAGES
@@ -23,13 +21,15 @@ async def delete_msg_bot(id):
             pass
         sql_commands.clear_history_bot_msg(msg_id)
 
+async def send_msg(id, text, markup=InlineKeyboardMarkup()):
+    await delete_msg_bot(id)
+    msg_id = (await bot.send_message(id, text, reply_markup=markup)).message_id
+    sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO bot_msg VALUES (\'%d\', \'%d\')' % (msg_id, id))
+
 @dp.message_handler(commands = ['start'])
 async def start_func(msg: Message):
 
-    sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS users (id int primary key, status varchar(50))')
-    sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS bot_msg (msg_id int primary key, id int)')
-    sql_commands.change_in_table('yabloko', 'CREATE TABLE IF NOT EXISTS voters (id int primary key, name varchar(50), address varchar(100))')
-    sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS pre_reg (id int primary key, name varchar(50), address varchar(100))')
+    sql_commands.born_of_tables()
 
     sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO users VALUES (\'%d\', \'none\')' % (msg.chat.id))
 
@@ -37,11 +37,7 @@ async def start_func(msg: Message):
         sql_commands.set_status(msg.chat.id, 'none')
         sql_commands.change_in_table('bot', 'DELETE FROM pre_reg WHERE id == \'%d\'' % (msg.chat.id))
 
-    await delete_msg_bot(msg.chat.id)
-
-    msg_id = (await bot.send_message(msg.from_user.id, MESSAGES['start'], reply_markup=markups.markup_start())).message_id
-
-    sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO bot_msg VALUES (\'%d\', \'%d\')' % (msg_id, msg.chat.id))
+    await send_msg(msg.from_user.id, MESSAGES['start'], markup=markups.markup_start())
 
     await bot.delete_message(msg.from_user.id, msg.message_id)
 
@@ -50,29 +46,22 @@ async def enter_start(msg: Message):
 
     status = sql_commands.check_status(msg.chat.id)
     
-    if status == 'none':
-        await bot.delete_message(msg.from_user.id, msg.message_id)
+    if status == 'reg_name' and len(msg.text.split(' ')) == 2 and msg.text.replace(' ','f').isalpha():
+        sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO pre_reg (id, name) VALUES (\'%d\', \'%s\')' % (msg.chat.id, msg.text))
+        await send_msg(msg.chat.id, MESSAGES['registration_address'])
+        sql_commands.set_status(msg.chat.id, 'reg_address')
+    elif status == 'reg_address':
+        sql_commands.change_in_table('bot', 'UPDATE pre_reg SET address = \'%s\' WHERE id = \'%d\'' % (msg.text, msg.chat.id))
 
-    elif status == 'reg_name':
-        if len(msg.text.split(' ')) == 2 and msg.text.replace(' ','f').isalpha():
-            print(123)
-            sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO pre_reg (id, name) VALUES (\'%d\', \'%s\')' % (msg.chat.id, msg.text))
+    await bot.delete_message(msg.from_user.id, msg.message_id)
 
 @dp.callback_query_handler()
 async def callback(call):
 
     user_id = call.message.chat.id
-    status = sql_commands.check_status(user_id)
     edit = lambda text, markup: bot.edit_message_text(text, user_id, call.message.message_id, reply_markup=markup)
-
-    if call.data == 'priority_start' and status != 'none':
-        sql_commands.set_status(user_id, 'none')
-        await edit(MESSAGES['start'], markups.markup_start())
     
-    elif status != 'none':
-        return
-    
-    elif call.data == 'start':
+    if call.data == 'start':
         await edit(MESSAGES['start'], markups.markup_start())
     
     elif call.data == 'party_program_select':
@@ -89,7 +78,7 @@ async def callback(call):
 
     elif call.data == 'registration_name':
         sql_commands.set_status(user_id, 'reg_name')
-        await edit(MESSAGES['registration_name'], InlineKeyboardMarkup())
+        await send_msg(user_id, MESSAGES['registration_name'])
 
 
 if __name__ == '__main__':
