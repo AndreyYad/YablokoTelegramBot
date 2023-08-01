@@ -15,11 +15,18 @@ from modules.sql_commands import sql_commands
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
 
+async def delete_msg_bot(id):
+    for msg_id in sql_commands.history_bot_msg(id):
+        try:
+            await bot.delete_message(id, msg_id)
+        except exceptions.MessageToDeleteNotFound:
+            pass
+
 @dp.message_handler(commands = ['start'])
 async def start_func(msg: Message):
 
     sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS users (id int primary key, status varchar(50))')
-    sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS bot_msg (msg_id int primary key, user_id int)')
+    sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS bot_msg (msg_id int primary key, id int)')
     sql_commands.change_in_table('yabloko', 'CREATE TABLE IF NOT EXISTS voters (id int primary key, name varchar(50), address varchar(100))')
     sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS pre_reg (id int primary key, name varchar(50), address varchar(100))')
 
@@ -29,7 +36,12 @@ async def start_func(msg: Message):
         sql_commands.set_status(msg.chat.id, 'none')
         sql_commands.change_in_table('bot', 'DELETE FROM pre_reg WHERE id == \'%d\'' % (msg.chat.id))
 
-    await bot.send_message(msg.from_user.id, MESSAGES['start'], reply_markup=markups.markup_start())
+    await delete_msg_bot(msg.chat.id)
+
+    msg_id = (await bot.send_message(msg.from_user.id, MESSAGES['start'], reply_markup=markups.markup_start())).message_id
+
+    sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO bot_msg VALUES (\'%d\', \'%d\')' % (msg_id, msg.chat.id))
+
     await bot.delete_message(msg.from_user.id, msg.message_id)
 
 @dp.message_handler()

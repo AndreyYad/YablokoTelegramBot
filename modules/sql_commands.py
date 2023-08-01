@@ -13,6 +13,23 @@ class sql_commands():
         cur.close()
         conn.close()
 
+    def history_bot_msg(id):
+
+        conn = connect('data/bot_tables.sql')
+        cur = conn.cursor()
+
+        cur.execute('SELECT msg_id FROM bot_msg WHERE id = \'%d\'' % (id))
+        
+        result = []
+
+        for msg in cur.fetchall():
+            result.append(msg[0])
+
+        cur.close()
+        conn.close()
+
+        return result
+
     # Получение статуса пользователя
     def check_status(id):
 
