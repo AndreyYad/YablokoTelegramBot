@@ -15,30 +15,22 @@ from modules.sql_commands import sql_commands
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
 
-async def see_table(cmd):
-    conn = connect('data/yabloko_tables.sql')
-    cur = conn.cursor()
-
-    cur.execute(cmd)
-    voters = cur.fetchall()
-
-    info = []
-
-    for el in voters:
-        info.append({'name'})
-    
-    cur.close()
-    conn.close()
-
-    return info
-
 @dp.message_handler(commands = ['start'])
 async def start_func(msg: Message):
 
-    sql_commands.change_in_table('CREATE TABLE IF NOT EXISTS users (id int primary key, status varchar(50))')
-    sql_commands.change_in_table('INSERT OR IGNORE INTO users VALUES (\'%d\', \'none\')' % (msg.chat.id))
+    sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS users (id int primary key, status varchar(50))')
+    sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS bot_msg (msg_id int primary key, user_id int)')
+    sql_commands.change_in_table('yabloko', 'CREATE TABLE IF NOT EXISTS voters (id int primary key, name varchar(50), address varchar(100))')
+    sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS pre_reg (id int primary key, name varchar(50), address varchar(100))')
+
+    sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO users VALUES (\'%d\', \'none\')' % (msg.chat.id))
+
+    if sql_commands.check_status(msg.chat.id) != 'none':
+        sql_commands.set_status(msg.chat.id, 'none')
+        sql_commands.change_in_table('bot', 'DELETE FROM pre_reg WHERE id == \'%d\'' % (msg.chat.id))
 
     await bot.send_message(msg.from_user.id, MESSAGES['start'], reply_markup=markups.markup_start())
+    await bot.delete_message(msg.from_user.id, msg.message_id)
 
 @dp.message_handler()
 async def enter_start(msg: Message):
@@ -48,12 +40,26 @@ async def enter_start(msg: Message):
     if status == 'none':
         await bot.delete_message(msg.from_user.id, msg.message_id)
 
+    elif status == 'reg_name':
+        if len(msg.text.split(' ')) == 2 and msg.text.replace(' ','f').isalpha():
+            print(123)
+            sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO pre_reg (id, name) VALUES (\'%d\', \'%s\')' % (msg.chat.id, msg.text))
+
 @dp.callback_query_handler()
 async def callback(call):
 
-    edit = lambda text, markup: bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup)
+    user_id = call.message.chat.id
+    status = sql_commands.check_status(user_id)
+    edit = lambda text, markup: bot.edit_message_text(text, user_id, call.message.message_id, reply_markup=markup)
 
-    if call.data == 'start':
+    if call.data == 'priority_start' and status != 'none':
+        sql_commands.set_status(user_id, 'none')
+        await edit(MESSAGES['start'], markups.markup_start())
+    
+    elif status != 'none':
+        return
+    
+    elif call.data == 'start':
         await edit(MESSAGES['start'], markups.markup_start())
     
     elif call.data == 'party_program_select':
@@ -64,6 +70,13 @@ async def callback(call):
 
     elif call.data == 'party_program_novgorod':
         await edit(MESSAGES['party_program_novgorod'], markups.markup_party_program_back())
+
+    elif call.data == 'want_to_registration':
+        await edit(MESSAGES['want_to_registration'], markups.markup_want_to_registration())
+
+    elif call.data == 'registration_name':
+        sql_commands.set_status(user_id, 'reg_name')
+        await edit(MESSAGES['registration_name'], InlineKeyboardMarkup())
 
 
 if __name__ == '__main__':

@@ -6,7 +6,7 @@ class markups():
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton('Что предлагает «Яблоко»', callback_data='party_program_select'))
         markup.add(InlineKeyboardButton('Мой кандидат по округу', callback_data='z'))
-        markup.add(InlineKeyboardButton('Регистрация избирателя', callback_data='z'))
+        markup.add(InlineKeyboardButton('Регистрация избирателя', callback_data='want_to_registration'))
         markup.add(InlineKeyboardButton('Я проголосовал(а)  ', callback_data='z'))
         return markup
 
@@ -32,3 +32,16 @@ class markups():
         return markup
     
     # Начало регистрации
+    def markup_want_to_registration():
+        markup = InlineKeyboardMarkup()
+        markup.row(
+            InlineKeyboardButton('Да', callback_data='registration_name'),
+            InlineKeyboardButton('Нет', callback_data='start')
+        )
+        return markup
+    
+    # Отмена регистрации
+    def markup_cancel():
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton('Отмена', callback_data='priority_start'))
+        return markup

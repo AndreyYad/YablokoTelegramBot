@@ -2,9 +2,9 @@ from sqlite3 import connect
 
 class sql_commands():
     # Изменения в таблице
-    def change_in_table(cmd):
+    def change_in_table(file_name, cmd):
 
-        conn = connect('data/yabloko_tables.sql')
+        conn = connect(f'data/{file_name}_tables.sql')
         cur = conn.cursor()
 
         cur.execute(cmd)
@@ -16,7 +16,7 @@ class sql_commands():
     # Получение статуса пользователя
     def check_status(id):
 
-        conn = connect('data/yabloko_tables.sql')
+        conn = connect('data/bot_tables.sql')
         cur = conn.cursor()
 
         cur.execute('SELECT status FROM users WHERE id = \'%d\'' % (id))
@@ -26,3 +26,15 @@ class sql_commands():
         conn.close()
 
         return result
+
+    # Смена статуса пользователя
+    def set_status(id, status):
+
+        conn = connect('data/bot_tables.sql')
+        cur = conn.cursor()
+
+        cur.execute('UPDATE users SET status = \'%s\' WHERE id = \'%d\'' % (status, id))
+        conn.commit()
+
+        cur.close()
+        conn.close()
