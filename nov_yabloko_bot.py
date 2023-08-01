@@ -21,6 +21,7 @@ async def delete_msg_bot(id):
             await bot.delete_message(id, msg_id)
         except exceptions.MessageToDeleteNotFound:
             pass
+        sql_commands.clear_history_bot_msg(msg_id)
 
 @dp.message_handler(commands = ['start'])
 async def start_func(msg: Message):
