@@ -4,13 +4,14 @@ from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor, exceptions
 from aiogram.bot import bot
 
-from modules.config import TOKEN
+from os import environ
+
 from modules.messages import MESSAGES
 
 from modules.markups import markups
 from modules.sql_commands import sql_commands
 
-bot = Bot(token=TOKEN)
+bot = Bot(token=environ['TELEGRAM_BOT_TOKEN'])
 dp = Dispatcher(bot)
 
 async def delete_msg_bot(id):
