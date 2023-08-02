@@ -45,5 +45,31 @@ class markups():
     # Отмена регистрации
     def markup_cancel():
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton('Отмена', callback_data='priority_start'))
+        markup.add(InlineKeyboardButton('Отмена', callback_data='start'))
+        return markup
+    
+    # Проверка верности даных при регистрации
+    def markup_check_registration_result():
+        markup = InlineKeyboardMarkup()
+        markup.row(
+            InlineKeyboardButton('Да', callback_data='registration_completed'),
+            InlineKeyboardButton('Нет', callback_data='registration_name')
+        )
+        markup.row(
+            InlineKeyboardButton('Отмена регистрации', callback_data='start')
+        )
+        return markup
+    
+    # Регистрация завершена
+    def markup_registration_completed():
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton('Хорошо', callback_data='start'))
+        return markup
+    
+    # Уже зарегестрирваоны
+    def markup_already_registration():
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton('Сменить даные', callback_data='registration_name'))
+        markup.add(InlineKeyboardButton('Удалить даные', callback_data='delete_data'))
+        markup.add(InlineKeyboardButton('🔙Назад', callback_data='start'))
         return markup

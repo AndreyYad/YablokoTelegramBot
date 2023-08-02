@@ -1,13 +1,6 @@
 from sqlite3 import connect
 
 class sql_commands():
-    # Создание таблиц
-    def born_of_tables():
-        sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS users (id int primary key, status varchar(50))')
-        sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS bot_msg (msg_id int primary key, id int)')
-        sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS pre_reg (id int primary key, name varchar(50), address varchar(100))')
-        sql_commands.change_in_table('yabloko', 'CREATE TABLE IF NOT EXISTS voters (id int primary key, name varchar(50), address varchar(100))')
-
     # Изменения в таблице
     def change_in_table(file_name, cmd):
 
@@ -75,3 +68,48 @@ class sql_commands():
 
         cur.close()
         conn.close()
+
+    # Получение предрегистрационых даных пользователя
+    def grab_pre_reg_data(id):
+
+        conn = connect('data/bot_tables.sql')
+        cur = conn.cursor()
+
+        cur.execute('SELECT name, address FROM pre_reg WHERE id = \'%d\'' % (id))
+        result = cur.fetchall()[0]
+
+        cur.close()
+        conn.close()
+
+        return result
+    
+    # Получение даных пользователя
+    def grab_registration_data(id):
+
+        conn = connect('data/yabloko_tables.sql')
+        cur = conn.cursor()
+
+        cur.execute('SELECT name, address FROM voters WHERE id = \'%d\'' % (id))
+        result = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        if len(result) == 0:
+            return None
+        else:
+            return result[0]
+
+    # Проверка регистрации пользователя
+    def check_registration(id):
+
+        conn = connect('data/yabloko_tables.sql')
+        cur = conn.cursor()
+
+        cur.execute('SELECT id FROM voters WHERE id = \'%d\'' % (id))
+        result = len(cur.fetchall()) != 0
+
+        cur.close()
+        conn.close()
+
+        return result
