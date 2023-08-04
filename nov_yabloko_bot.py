@@ -6,16 +6,36 @@ from aiogram.bot import bot
 
 from os import environ
 
-from modules.messages import MESSAGES
+from json import load
 
 from modules.markups import markups
 from modules.sql_commands import sql_commands
 from modules.data_commands import data
+from modules.izber_parsing import izber_uchastok
+
+from modules.messages import MESSAGES
+
+with open('data/okruga_data.json', encoding='utf-8') as file:
+    OKRUGA = load(file)
 
 bot = Bot(token=environ['TELEGRAM_BOT_TOKEN'])
 dp = Dispatcher(bot)
 
 print('Бот запущен')
+
+# Информация о кандите округа и о избирательном участке
+async def info_okrug(user_id, address):
+        uchastok_info = izber_uchastok(address['street'], '{} {}'.format(address['house'], address['korp']))
+        okrug_info = [okrug for okrug in OKRUGA if uchastok_info['num'] in okrug['stations']][0]
+        if okrug_info['candidat'] == '':
+            orug_info_text = MESSAGES['empty_candidate']
+        else:
+            okrug_info_text = MESSAGES['candidate_info'].format(okrug_info['num'], okrug_info['candidat'])
+        await send_msg(
+            user_id,
+            MESSAGES['candidat_stantion_info'].format(okrug_info_text, uchastok_info['address'], uchastok_info['num']),
+            markup=markups.markup_registration_completed()
+        )
 
 async def delete_msg_bot(id):
     for msg_id in sql_commands.history_bot_msg(id):
@@ -25,9 +45,10 @@ async def delete_msg_bot(id):
             pass
         sql_commands.clear_history_bot_msg(msg_id)
 
-async def send_msg(id, text, markup=InlineKeyboardMarkup()):
-    await delete_msg_bot(id)
-    msg_id = (await bot.send_message(id, text, reply_markup=markup)).message_id
+async def send_msg(id, text, markup=InlineKeyboardMarkup(), delete=True):
+    if delete:
+        await delete_msg_bot(id)
+    msg_id = (await bot.send_message(id, text, reply_markup=markup, parse_mode='html')).message_id
     sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO bot_msg VALUES (\'%d\', \'%d\')' % (msg_id, id))
 
 @dp.message_handler(commands = ['start'])
@@ -54,22 +75,28 @@ async def enter_start(msg: Message):
         sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO pre_reg (id, name) VALUES (\'%d\', \'%s\')' % (msg.chat.id, msg.text))
         await send_msg(msg.chat.id, MESSAGES['registration_address'], markup=markups.markup_cancel())
         sql_commands.set_status(msg.chat.id, 'reg_address')
-    elif status == 'reg_address':
-        sql_commands.change_in_table('bot', 'UPDATE pre_reg SET address = \'%s\' WHERE id = \'%d\'' % (msg.text, msg.chat.id))
-        user_info = sql_commands.grab_pre_reg_data(msg.chat.id)
-        await send_msg(
-            msg.chat.id, 
-            MESSAGES['check_registration_result'].format(user_info[0], user_info[1]), 
-            markup=markups.markup_check_registration_result()
-        )
-
+    elif status in ['reg_address', 'my_cand_addres']:
+        address = data.text_to_address(msg.text)
+        if address != None and izber_uchastok(address['street'], '{} {}'.format(address['house'], address['korp'])) != None:
+            sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO pre_reg (id) VALUES (\'%d\')' % (msg.chat.id))
+            sql_commands.change_in_table('bot', 'UPDATE pre_reg SET address = \'%s\' WHERE id = \'%d\'' % (msg.text, msg.chat.id))
+            user_info = sql_commands.grab_pre_reg_data(msg.chat.id)
+            if status == 'reg_address':
+                await send_msg(
+                    msg.chat.id, 
+                    MESSAGES['check_registration_result'].format(user_info[0], user_info[1]), 
+                    markup=markups.markup_check_registration_result()
+                )
+            elif status == 'my_cand_addres':
+                await info_okrug(msg.chat.id, address)
+        
     await bot.delete_message(msg.from_user.id, msg.message_id)
 
 @dp.callback_query_handler()
 async def callback(call):
 
     user_id = call.message.chat.id
-    edit = lambda text, markup: bot.edit_message_text(text, user_id, call.message.message_id, reply_markup=markup)
+    edit = lambda text, markup: bot.edit_message_text(text, user_id, call.message.message_id, reply_markup=markup, parse_mode='html')
     
     if call.data == 'delete_data':
         data.delete_voter_data(user_id)
@@ -111,9 +138,19 @@ async def callback(call):
         sql_commands.set_status(user_id, 'none')
         await edit(MESSAGES['registration_completed'], markups.markup_registration_completed())
 
-    elif call.data == 'already_registration':
-        pass
+    elif call.data.startswith('my_candidate_address'):
+        if sql_commands.check_registration(user_id) and call.data == 'my_candidate_address':
+            await edit(MESSAGES['have_address'].format(sql_commands.grab_registration_data(user_id)[1]), markups.markup_have_address())
+        else:
+            sql_commands.set_status(user_id, 'my_cand_addres')
+            await edit(MESSAGES['enter_address'], markups.markup_cancel())
 
+    elif call.data == 'have_address':
+        address = data.text_to_address(sql_commands.grab_registration_data(user_id)[1])
+        await info_okrug(user_id, address)
+
+    elif call.data == 'im_vote':
+        await edit(MESSAGES['im_vote'], markups.markup_registration_completed())
 
 if __name__ == '__main__':
     executor.start_polling(dp)

@@ -5,9 +5,9 @@ class markups():
     def markup_start():
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton('Что предлагает «Яблоко»', callback_data='party_program_select'))
-        markup.add(InlineKeyboardButton('Мой кандидат по округу', callback_data='z'))
+        markup.add(InlineKeyboardButton('Мой кандидат по округу', callback_data='my_candidate_address'))
         markup.add(InlineKeyboardButton('Регистрация избирателя', callback_data='want_to_registration'))
-        markup.add(InlineKeyboardButton('Я проголосовал(а)  ', callback_data='z'))
+        markup.add(InlineKeyboardButton('Я проголосовал(а)  ', callback_data='im_vote'))
         return markup
 
     # Выбор части програмы партии
@@ -72,4 +72,16 @@ class markups():
         markup.add(InlineKeyboardButton('Сменить даные', callback_data='registration_name'))
         markup.add(InlineKeyboardButton('Удалить даные', callback_data='delete_data'))
         markup.add(InlineKeyboardButton('🔙Назад', callback_data='start'))
+        return markup
+    
+    # В бд есть ваш адрес
+    def markup_have_address():
+        markup = InlineKeyboardMarkup()
+        markup.row(
+            InlineKeyboardButton('Да', callback_data='have_address'),
+            InlineKeyboardButton('Нет', callback_data='my_candidate_address_enter')
+        )
+        markup.row(
+            InlineKeyboardButton('🔙Назад', callback_data='start')
+        )
         return markup

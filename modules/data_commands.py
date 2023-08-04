@@ -1,4 +1,5 @@
 from modules.sql_commands import sql_commands
+from modules.izber_parsing import izber_uchastok
 
 class data():
     # Создание таблиц
@@ -12,5 +13,49 @@ class data():
     def delete_pre_reg(id):
         sql_commands.change_in_table('bot', 'DELETE FROM pre_reg WHERE id == \'%d\'' % (id))
 
+    # Удаление данных пользователя из бд
     def delete_voter_data(id):
         sql_commands.change_in_table('yabloko', 'DELETE FROM voters WHERE id == \'%d\'' % (id))
+
+    # Информация об участке и кандидате округа
+    def uchastok_info(street, house):
+        izber_info = { 'uchastok' : '', 'candidate' : '' }
+
+    # Преобразование текста в адрес
+    def text_to_address(text):
+        address = {
+            'street' : '',
+            'house' : '',
+            'korp' : ''
+        }
+
+        if data.check_text_address(text):
+            text = text.split(',')
+            address['street'] = text[0]
+            address['house'] = text[1][4:]
+            if len(text) == 3:
+                address['house'] = text[2][7:]
+        else:
+            address = None
+
+        return address
+
+    # Проверка текста на прописание адреса
+    def check_text_address(text):
+
+        result = False
+
+        if text.count(',') in [1,2]:
+            text = text.split(',')
+            if text[1].startswith(' д. ') and len(text[1]) > 4:
+                if len(text) == 3:
+                    if text[2].startswith(' корп. ') and len(text[2]) > 7:
+                        result = True
+                elif len(text) == 2:
+                    result = True
+
+        return result
+
+if __name__ == '__main__':
+    text = 'Кочетова, д. 2'
+    print(data.text_to_address(text))
