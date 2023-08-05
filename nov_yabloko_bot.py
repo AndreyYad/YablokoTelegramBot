@@ -25,15 +25,15 @@ print('Бот запущен')
 
 # Информация о кандите округа и о избирательном участке
 async def info_okrug(user_id, address):
-        uchastok_info = izber_uchastok(address['street'], '{} {}'.format(address['house'], address['korp']))
+        uchastok_info = await izber_uchastok(address['street'], '{} {}'.format(address['house'], address['korp']))
         okrug_info = [okrug for okrug in OKRUGA if uchastok_info['num'] in okrug['stations']][0]
         if okrug_info['candidat'] == '':
-            orug_info_text = MESSAGES['empty_candidate']
+            okrug_info_text = MESSAGES['empty_candidate']
         else:
             okrug_info_text = MESSAGES['candidate_info'].format(okrug_info['num'], okrug_info['candidat'])
         await send_msg(
             user_id,
-            MESSAGES['candidat_stantion_info'].format(okrug_info_text, uchastok_info['address'], uchastok_info['num']),
+            MESSAGES['candidat_stantion_info'].format(okrug_info_text, uchastok_info['address'], str(uchastok_info['num']).zfill(2)),
             markup=markups.markup_registration_completed()
         )
 
@@ -77,7 +77,7 @@ async def enter_start(msg: Message):
         sql_commands.set_status(msg.chat.id, 'reg_address')
     elif status in ['reg_address', 'my_cand_addres']:
         address = data.text_to_address(msg.text)
-        if address != None and izber_uchastok(address['street'], '{} {}'.format(address['house'], address['korp'])) != None:
+        if address != None and await izber_uchastok(address['street'], '{} {}'.format(address['house'], address['korp'])) != None:
             sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO pre_reg (id) VALUES (\'%d\')' % (msg.chat.id))
             sql_commands.change_in_table('bot', 'UPDATE pre_reg SET address = \'%s\' WHERE id = \'%d\'' % (msg.text, msg.chat.id))
             user_info = sql_commands.grab_pre_reg_data(msg.chat.id)

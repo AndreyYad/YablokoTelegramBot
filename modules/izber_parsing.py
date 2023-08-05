@@ -1,13 +1,19 @@
-from requests import get
-from json import loads
+from aiohttp import ClientSession
+from json import loads, dump
+from json.decoder import JSONDecodeError
+from pprint import PrettyPrinter
 
-def izber_uchastok(street, house):
-    if '/' in house:
-        house = house.split('/')
-        try:
-            house = house[0] + house[1][house[1].index(','):]
-        except ValueError:
-            house = house[0]
+import asyncio 
+
+async def to_json(obj, name_file='output'):
+    with open(f'{name_file}.json', 'w', encoding='utf-8') as file:
+        dump(obj, file, indent=4, ensure_ascii=False)
+
+async def cikrf(street, house):
+
+    check_address = lambda orig, new: new == orig 
+
+    house = house.replace(', корп. ', ' ')
 
     url = f'http://cikrf.ru/iservices/voter-services/address/search/Новгородская область, город Великий Новгород, {street}, {house}'
 
@@ -15,29 +21,122 @@ def izber_uchastok(street, house):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0",
     }
 
-    server = get(url, headers=headers)
-    output = loads(server.text)
+    async with ClientSession() as session:
+        async with session.get(url, headers=headers) as response:
+            server = response
 
-    try:
-        if ' кв. ' in output[0]['name']:
-            return None
+            try:
+                output = loads(await server.text())
+            except JSONDecodeError:
+                return None
 
-        district_id = output[0]["id"]
-    except IndexError:
-        return None
+            try:
 
-    address_info = get(f"http://cikrf.ru/iservices/voter-services/committee/address/{district_id}", headers=headers)
+                name_out = output[0]['name'].replace('Новгородская область, город Великий Новгород, ', '')
+                if ' кв. ' in name_out:
+                    name_out = name_out[:name_out.find(', кв.')]
+                
+                # print(f'[{street},{house}]')
+                # print(f'[{name_out}]')
 
-    uchastok_dict = loads(address_info.text)
+                if f'{street},{house}' != name_out:
+                    return None
 
-    # print(uchastok_dict)
 
-    uchastok_info = {
-        'num' : int(uchastok_dict['name'][-2:]),
-        'address' : '{},{}'.format(uchastok_dict['votingAddress']['address'], uchastok_dict['votingAddress']['descr'])
+                district_id = output[0]["id"]
+            except IndexError:
+                return None
+            
+            async with session.get(f"http://cikrf.ru/iservices/voter-services/committee/address/{district_id}", headers=headers) as response:
+                address_info = response
+
+                uchastok_dict = loads(await address_info.text())
+
+                uchastok_info = {
+                    'num' : int(uchastok_dict['name'][-2:]),
+                    'address' : uchastok_dict['votingAddress']['address']
+                }
+
+                # print(uchastok_info)
+
+                return uchastok_info
+            
+async def mfc(street, house):
+    house = house.replace(', корп. ', ' ').replace('д. ', '').lstrip().rstrip()
+
+
+    url = 'https://mfc.zone/rest/getCikLocations'
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0",
     }
 
-    return uchastok_info
+    data = {
+        'intid' : 135637827259064320000378637,
+        'parentId' : 4744673537
+    }
+
+    async with ClientSession() as session:
+        async with session.post(url, headers=headers, data=data) as response:
+            streets = loads(await response.text())
+            await to_json(streets)
+
+            for street_ in streets:
+                if street in street_['text']:
+                    street_data = street_
+                    break
+            else:
+                return None
+
+            data = {
+                'intid' : street_data['intid'],
+                'parentId' : street_data['id']
+            }
+
+            async with session.post(url, headers=headers, data=data) as response:
+                houses = loads(await response.text())
+                await to_json(houses)
+
+                for house_ in houses:
+                    if house == house_['text']:
+                        house_data = house_
+                        break
+                else:
+                    return None
+                
+                data = {
+                    'intid' : house_data['intid'],
+                    'parentId' : house_data['id'],
+                    'region': 'Новгородская область'
+                }
+
+                url = 'https://mfc.zone/rest/getCikPlace'
+            
+                async with session.post(url, headers=headers, data=data) as response:
+                    uchastok_dict = loads(await response.text())
+                    await to_json(uchastok_dict)
+
+                    uchastok_info = {
+                        'num' : int(uchastok_dict['name'][-2:]),
+                        'address' : uchastok_dict['address']
+                    }
+
+                    # print(uchastok_info)
+
+                    return uchastok_info
+
+async def izber_uchastok(street, house, only_mfc=False):
+    print(f'[{street},{house}]')
+    cik_ver = await cikrf(street, house)
+    if cik_ver == None or only_mfc:
+        print('МФЦ')
+        return await mfc(street, house)
+    else:
+        print('ЦИК')
+        return cik_ver
 
 if __name__ == '__main__':
-    print(izber_uchastok('Набережная Александра Невского', 'д. 22/2'))
+    # 'Набережная Александра Невского', 'д. 22/2'
+    street = 'Большая Московская'
+    house = ' д. 59'
+    print(asyncio.run(izber_uchastok(street, house, only_mfc=False)))
