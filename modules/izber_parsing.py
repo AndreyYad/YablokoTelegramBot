@@ -11,9 +11,7 @@ async def to_json(obj, name_file='output'):
 
 async def cikrf(street, house):
 
-    check_address = lambda orig, new: new == orig 
-
-    house = house.replace(', корп. ', ' ')
+    check_address = lambda orig, new: new == orig
 
     url = f'http://cikrf.ru/iservices/voter-services/address/search/Новгородская область, город Великий Новгород, {street}, {house}'
 
@@ -36,10 +34,10 @@ async def cikrf(street, house):
                 if ' кв. ' in name_out:
                     name_out = name_out[:name_out.find(', кв.')]
                 
-                # print(f'[{street},{house}]')
+                # print(f'[{street}, д. {house}]')
                 # print(f'[{name_out}]')
 
-                if f'{street},{house}' != name_out:
+                if f'{street}, д. {house}' != name_out:
                     return None
 
 
@@ -57,13 +55,11 @@ async def cikrf(street, house):
                     'address' : uchastok_dict['votingAddress']['address']
                 }
 
-                # print(uchastok_info)
-
                 return uchastok_info
             
 async def mfc(street, house):
-    house = house.replace(', корп. ', ' ').replace('д. ', '').lstrip().rstrip()
 
+    # print(f'[{street},{house}]')
 
     url = 'https://mfc.zone/rest/getCikLocations'
 
@@ -126,7 +122,10 @@ async def mfc(street, house):
                     return uchastok_info
 
 async def izber_uchastok(street, house, only_mfc=False):
-    print(f'[{street},{house}]')
+    house = house.replace(', корп. ', ' ').replace('д. ', '').lstrip().rstrip()
+    street = street.lstrip().rstrip()
+
+    print(f'прием - [{street},{house}]')
     cik_ver = await cikrf(street, house)
     if cik_ver == None or only_mfc:
         print('МФЦ')
@@ -137,6 +136,6 @@ async def izber_uchastok(street, house, only_mfc=False):
 
 if __name__ == '__main__':
     # 'Набережная Александра Невского', 'д. 22/2'
-    street = 'Большая Московская'
-    house = ' д. 59'
+    street = 'Кочетова'
+    house = '2 2'
     print(asyncio.run(izber_uchastok(street, house, only_mfc=False)))

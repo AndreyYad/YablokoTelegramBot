@@ -6,8 +6,8 @@ class data():
     def born_of_tables():
         sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS users (id int primary key, status varchar(50))')
         sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS bot_msg (msg_id int primary key, id int)')
-        sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS pre_reg (id int primary key, name varchar(50), address varchar(100))')
-        sql_commands.change_in_table('yabloko', 'CREATE TABLE IF NOT EXISTS voters (id int primary key, name varchar(50), address varchar(100))')
+        sql_commands.change_in_table('bot', 'CREATE TABLE IF NOT EXISTS pre_reg (id int primary key, name varchar(50), address varchar(100), phone varchar(12))')
+        sql_commands.change_in_table('yabloko', 'CREATE TABLE IF NOT EXISTS voters (id int primary key, name varchar(50), address varchar(100), phone varchar(12))')
 
     # Удаление пред регистрационых данных
     def delete_pre_reg(id):
@@ -29,12 +29,14 @@ class data():
             'korp' : ''
         }
 
+        print(text)
+
         if data.check_text_address(text):
             text = text.split(',')
             address['street'] = text[0]
-            address['house'] = text[1][4:]
+            address['house'] = text[1].replace(' д. ', '')
             if len(text) == 3:
-                address['house'] = text[2][7:]
+                address['korp'] = text[2].replace(' корп. ', '')
         else:
             address = None
 

@@ -75,7 +75,7 @@ class sql_commands():
         conn = connect('data/bot_tables.sql')
         cur = conn.cursor()
 
-        cur.execute('SELECT name, address FROM pre_reg WHERE id = \'%d\'' % (id))
+        cur.execute('SELECT name, address, phone FROM pre_reg WHERE id = \'%d\'' % (id))
         result = cur.fetchall()[0]
 
         cur.close()
@@ -89,7 +89,7 @@ class sql_commands():
         conn = connect('data/yabloko_tables.sql')
         cur = conn.cursor()
 
-        cur.execute('SELECT name, address FROM voters WHERE id = \'%d\'' % (id))
+        cur.execute('SELECT name, address, phone FROM voters WHERE id = \'%d\'' % (id))
         result = cur.fetchall()
 
         cur.close()
