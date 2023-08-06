@@ -99,6 +99,20 @@ class sql_commands():
             return None
         else:
             return result[0]
+        
+    # Получение айди всех пользователей
+    def grab_users_id():
+
+        conn = connect('data/bot_tables.sql')
+        cur = conn.cursor()
+
+        cur.execute('SELECT id FROM users')
+        result = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        return [obj[0] for obj in result]
 
     # Проверка регистрации пользователя
     def check_registration(id):

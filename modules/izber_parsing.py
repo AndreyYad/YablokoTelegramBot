@@ -1,7 +1,6 @@
 from aiohttp import ClientSession
-from json import loads, dump
+from json import loads, dump, load
 from json.decoder import JSONDecodeError
-from pprint import PrettyPrinter
 
 import asyncio 
 
@@ -48,14 +47,12 @@ async def cikrf(street, house):
             async with session.get(f"http://cikrf.ru/iservices/voter-services/committee/address/{district_id}", headers=headers) as response:
                 address_info = response
 
-                uchastok_dict = loads(await address_info.text())
+                try:
+                    uchastok_dict = loads(await address_info.text())
+                except JSONDecodeError:
+                    return None
 
-                uchastok_info = {
-                    'num' : int(uchastok_dict['name'][-2:]),
-                    'address' : uchastok_dict['votingAddress']['address']
-                }
-
-                return uchastok_info
+                return int(uchastok_dict['name'][-2:])
             
 async def mfc(street, house):
 
@@ -75,7 +72,6 @@ async def mfc(street, house):
     async with ClientSession() as session:
         async with session.post(url, headers=headers, data=data) as response:
             streets = loads(await response.text())
-            await to_json(streets)
 
             for street_ in streets:
                 if street in street_['text']:
@@ -91,7 +87,6 @@ async def mfc(street, house):
 
             async with session.post(url, headers=headers, data=data) as response:
                 houses = loads(await response.text())
-                await to_json(houses)
 
                 for house_ in houses:
                     if house == house_['text']:
@@ -110,16 +105,18 @@ async def mfc(street, house):
             
                 async with session.post(url, headers=headers, data=data) as response:
                     uchastok_dict = loads(await response.text())
-                    await to_json(uchastok_dict)
+                    
+                    if uchastok_dict == None:
+                        return None
 
-                    uchastok_info = {
-                        'num' : int(uchastok_dict['name'][-2:]),
-                        'address' : uchastok_dict['address']
-                    }
-
-                    # print(uchastok_info)
-
-                    return uchastok_info
+                    return int(uchastok_dict['name'][-2:])
+                
+async def check_full_streets(street):
+    with open('data/full_streets.json', encoding='utf-8') as file:
+        try:
+            return load(file)[street]
+        except KeyError:
+            return None
 
 async def izber_uchastok(street, house, only_mfc=False):
     house = house.replace(', корп. ', ' ').replace('д. ', '').lstrip().rstrip()
@@ -127,15 +124,20 @@ async def izber_uchastok(street, house, only_mfc=False):
 
     print(f'прием - [{street},{house}]')
     cik_ver = await cikrf(street, house)
-    if cik_ver == None or only_mfc:
-        print('МФЦ')
-        return await mfc(street, house)
-    else:
+    if cik_ver != None or only_mfc:
         print('ЦИК')
         return cik_ver
+    
+    mfc_ver = await mfc(street, house)
+    if mfc_ver != None:
+        print('МФЦ')
+        return mfc_ver
+    
+    print('Улица полностью')
+    return await check_full_streets(street)
 
 if __name__ == '__main__':
     # 'Набережная Александра Невского', 'д. 22/2'
-    street = 'Кочетова'
-    house = '2 2'
+    street = 'Славная'
+    house = ''
     print(asyncio.run(izber_uchastok(street, house, only_mfc=False)))
