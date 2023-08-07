@@ -21,10 +21,17 @@ with open('data/okruga_data.json', encoding='utf-8') as file:
 with open('data/stations_data.json', encoding='utf-8') as file:
     STATIONS_DESC = load(file)
 
-with open('admins_id') as file:
+with open('z_admins_id') as file:
     ADMIN_ID = [int(id) for id in file.readlines()]
 
-bot = Bot(token=environ['TELEGRAM_BOT_TOKEN'])
+with open('z_token') as file:
+    TOKEN = file.read()
+
+# TOKEN = environ['TELEGRAM_BOT_TOKEN']
+
+SEND_PHOTO = False
+
+bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
 
 lamb_izber_uchastok = lambda address: izber_uchastok(address['street'], '{} {}'.format(address['house'], address['korp']))
@@ -39,7 +46,9 @@ async def send_info_okrug(user_id, station_num):
             photo = None
         else:
             okrug_info_text = MESSAGES['candidate_info'].format(okrug_info['num'], okrug_info['candidat'])
-            photo = open('img/{}.png'.format(okrug_info['num']), 'rb')
+            if SEND_PHOTO:
+                photo = open('img/{}.png'.format(okrug_info['num']), 'rb')
+        photo = None
         await send_msg(
             user_id,
             MESSAGES['candidat_stantion_info'].format(okrug_info_text, STATIONS_DESC[station_num-1], str(station_num).zfill(2)),
