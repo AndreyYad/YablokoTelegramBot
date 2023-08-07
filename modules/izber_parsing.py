@@ -122,7 +122,7 @@ async def izber_uchastok(street, house, only_mfc=False):
     house = house.replace(', корп. ', ' ').replace('д. ', '').lstrip().rstrip()
     street = street.lstrip().rstrip()
 
-    print(f'прием - [{street},{house}]')
+    # print(f'прием - [{street},{house}]')
     cik_ver = await cikrf(street, house)
     if cik_ver != None or only_mfc:
         print('ЦИК')

@@ -117,7 +117,7 @@ async def enter_start(msg: Message):
     elif status in ['reg_address', 'my_cand_addres']:
         
         address = data.text_to_address(msg.text)
-        print(address)
+        # print(address)
 
         if address != None:
 
