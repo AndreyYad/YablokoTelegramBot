@@ -29,7 +29,7 @@ with open('z_token') as file:
 
 # TOKEN = environ['TELEGRAM_BOT_TOKEN']
 
-SEND_PHOTO = False
+SEND_PHOTO = True
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
