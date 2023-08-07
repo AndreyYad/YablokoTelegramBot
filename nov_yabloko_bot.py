@@ -203,6 +203,7 @@ async def callback(call):
                 await edit(MESSAGES['enter_address'], markups.markup_cancel())
 
         elif call.data == 'have_address':
+            await edit(MESSAGES['loading'], markup=InlineKeyboardMarkup())
             address = data.text_to_address(sql_commands.grab_registration_data(user_id)[1])
             station_num = await lamb_izber_uchastok(address)
             await send_info_okrug(user_id, station_num)
