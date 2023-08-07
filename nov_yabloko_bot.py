@@ -1,10 +1,10 @@
 from aiogram import Bot
-from aiogram.types import Message, InlineKeyboardMarkup, InputFile
+from aiogram.types import Message, InlineKeyboardMarkup
 from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor, exceptions
 from aiogram.bot import bot
 
-from os import environ
+# from os import environ
 
 from json import load
 
@@ -99,6 +99,8 @@ async def enter_start(msg: Message):
 
     status = sql_commands.check_status(msg.chat.id)
 
+    await bot.delete_message(msg.from_user.id, msg.message_id)
+
     # Для админа
     if msg.chat.id in ADMIN_ID:
         if msg.text == '/restart':
@@ -142,8 +144,6 @@ async def enter_start(msg: Message):
             MESSAGES['check_registration_result'].format(user_info[0], user_info[1], user_info[2]), 
             markups.markup_check_registration_result()
         )
-        
-    await bot.delete_message(msg.from_user.id, msg.message_id)
 
 @dp.callback_query_handler()
 async def callback(call):
