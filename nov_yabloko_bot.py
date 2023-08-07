@@ -65,12 +65,12 @@ async def delete_msg_bot(id):
         sql_commands.clear_history_bot_msg(msg_id)
 
 async def send_msg(id, text, markup=InlineKeyboardMarkup(), delete=True, photo=None):
-    if delete:
-        await delete_msg_bot(id)
     if photo == None:
         msg_id = (await bot.send_message(id, text, reply_markup=markup, parse_mode='html')).message_id
     else:
         msg_id = (await bot.send_photo(id, photo, text, reply_markup=markup, parse_mode='html'))
+    if delete:
+        await delete_msg_bot(id)
     sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO bot_msg VALUES (\'%d\', \'%d\')' % (msg_id, id))
 
 @dp.message_handler(commands = ['start'])
