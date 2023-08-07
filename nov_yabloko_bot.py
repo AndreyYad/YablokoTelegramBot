@@ -47,7 +47,7 @@ async def send_info_okrug(user_id, station_num):
         else:
             okrug_info_text = MESSAGES['candidate_info'].format(okrug_info['num'], okrug_info['candidat'])
             if SEND_PHOTO:
-                photo = open('img/{}.png'.format(okrug_info['num']), 'rb')
+                photo = open('img/{}.jpg'.format(okrug_info['num']), 'rb')
         photo = None
         await send_msg(
             user_id,
