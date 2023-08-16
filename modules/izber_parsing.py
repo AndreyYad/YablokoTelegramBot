@@ -12,7 +12,7 @@ async def cikrf(street, house):
 
     check_address = lambda orig, new: new == orig
 
-    url = f'http://cikrf.ru/iservices/voter-services/address/search/Новгородская область, город Великий Новгород, {street}, {house}'
+    url = 'http://cikrf.ru/iservices/voter-services/address/search/Новгородская область, город Великий Новгород, {}, {}'.format(street, house.replace('/',''))
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0",
@@ -25,6 +25,7 @@ async def cikrf(street, house):
             try:
                 output = loads(await server.text())
             except JSONDecodeError:
+                print(url)
                 return None
 
             try:
@@ -118,26 +119,28 @@ async def check_full_streets(street):
         except KeyError:
             return None
 
-async def izber_uchastok(street, house, only_mfc=False):
+async def izber_uchastok(street, house):
     house = house.replace(', корп. ', ' ').replace('д. ', '').lstrip().rstrip()
     street = street.lstrip().rstrip()
 
     # print(f'прием - [{street},{house}]')
     cik_ver = await cikrf(street, house)
-    if cik_ver != None or only_mfc:
+    if cik_ver != None:
         print('ЦИК')
         return cik_ver
     
-    mfc_ver = await mfc(street, house)
-    if mfc_ver != None:
-        print('МФЦ')
-        return mfc_ver
+    # mfc_ver = await mfc(street, house)
+    # if mfc_ver != None:
+    #     print('МФЦ')
+    #     return mfc_ver
     
     print('Улица полностью')
     return await check_full_streets(street)
 
 if __name__ == '__main__':
     # 'Набережная Александра Невского', 'д. 22/2'
-    street = 'Славная'
-    house = ''
-    print(asyncio.run(izber_uchastok(street, house, only_mfc=False)))
+    street = 'Фёдоровский Ручей'
+    house = '10/48'
+    # print(asyncio.run(izber_uchastok(street, house)))
+
+    print(asyncio.run(cikrf(street, house)))
