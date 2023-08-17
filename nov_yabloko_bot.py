@@ -8,6 +8,11 @@ from aiogram.bot import bot
 
 from json import load
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+
+import asyncio 
+
 from modules.markups import markups
 from modules.sql_commands import sql_commands
 from modules.data_commands import data
@@ -72,6 +77,16 @@ async def send_msg(id, text='', markup=InlineKeyboardMarkup(), delete=True, phot
         await delete_msg_bot(id)
     sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO bot_msg VALUES (\'%d\', \'%d\')' % (msg_id, id))
 
+async def daily_reset():
+    for id_ in sql_commands.grab_users_id():
+        await delete_msg_bot(id_)
+        sql_commands.set_status(id_, 'none')
+
+async def scheduler():
+    scheduler = AsyncIOScheduler()
+    time_trigger = CronTrigger(hour='3', minute='30')
+    scheduler.add_job(daily_reset, time_trigger)
+    scheduler.start()
 
 
 @dp.message_handler(commands = ['start'])
@@ -152,6 +167,7 @@ async def enter_start(msg: Message):
             markups.markup_check_registration_result()
         )
 
+# Удаление лишних сообщений (Фото, видео, стикеры и др.)
 @dp.message_handler(content_types = ['any'])
 async def delete_other_func(msg: Message):
     await bot.delete_message(msg.from_user.id, msg.message_id)
@@ -227,4 +243,9 @@ async def callback(call):
 
 if __name__ == '__main__':
     data.born_of_tables()
-    executor.start_polling(dp)
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.create_task(scheduler())
+
+    executor.start_polling(dp, loop=loop)
