@@ -4,10 +4,15 @@ class markups():
     # Стартовое меню
     def markup_start():
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton('Что предлагает «Яблоко»', callback_data='party_program_select'))
-        markup.add(InlineKeyboardButton('Мой кандидат по округу', callback_data='my_candidate_address'))
-        markup.add(InlineKeyboardButton('Регистрация избирателя', callback_data='want_to_registration'))
-        markup.add(InlineKeyboardButton('Я проголосовал(а)  ', callback_data='im_vote'))
+        markup.row(
+            InlineKeyboardButton('Что предлагает «Яблоко»', callback_data='party_program_select'),
+            InlineKeyboardButton('Мой кандидат по округу', callback_data='my_candidate_address')
+        )
+        markup.row(
+            InlineKeyboardButton('Регистрация избирателя', callback_data='want_to_registration'),
+            InlineKeyboardButton('Я проголосовал(а)', callback_data='im_vote')
+        )
+        markup.add(InlineKeyboardButton('Техподдержка бота', url='https://t.me/sup_novgorod_yabloko_bot'))
         return markup
 
     # Выбор части програмы партии
@@ -20,7 +25,7 @@ class markups():
         )
 
         markup.row(
-            InlineKeyboardButton('🔙Назад', callback_data='start')
+            InlineKeyboardButton('« Назад', callback_data='start')
         )
 
         return markup
@@ -28,7 +33,7 @@ class markups():
     # Возврат к выборы части программы партии
     def markup_party_program_back():
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton('🔙Назад', callback_data='party_program_select'))
+        markup.add(InlineKeyboardButton('« Назад', callback_data='party_program_select'))
         return markup
     
     # Начало регистрации
@@ -71,7 +76,7 @@ class markups():
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton('Сменить даные', callback_data='registration_name'))
         markup.add(InlineKeyboardButton('Удалить даные', callback_data='delete_data'))
-        markup.add(InlineKeyboardButton('🔙Назад', callback_data='start'))
+        markup.add(InlineKeyboardButton('« Назад', callback_data='start'))
         return markup
     
     # В бд есть ваш адрес
@@ -82,6 +87,6 @@ class markups():
             InlineKeyboardButton('Нет', callback_data='my_candidate_address_enter')
         )
         markup.row(
-            InlineKeyboardButton('🔙Назад', callback_data='start')
+            InlineKeyboardButton('« Назад', callback_data='start')
         )
         return markup

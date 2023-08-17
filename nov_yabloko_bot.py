@@ -41,7 +41,7 @@ print('Бот запущен')
 # Информация о кандите округа и о избирательном участке
 async def send_info_okrug(user_id, station_num):
         okrug_info = [okrug for okrug in OKRUGA if station_num in okrug['stations']][0]
-        if okrug_info['candidat'] == '':
+        if okrug_info['name'] == '':
             okrug_info_text = MESSAGES['empty_candidate']
             photo = None
         else:
