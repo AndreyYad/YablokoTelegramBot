@@ -72,6 +72,8 @@ async def send_msg(id, text='', markup=InlineKeyboardMarkup(), delete=True, phot
         await delete_msg_bot(id)
     sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO bot_msg VALUES (\'%d\', \'%d\')' % (msg_id, id))
 
+
+
 @dp.message_handler(commands = ['start'])
 async def start_func(msg: Message, send=True):
 
@@ -149,6 +151,10 @@ async def enter_start(msg: Message):
             MESSAGES['check_registration_result'].format(user_info[0], user_info[1], user_info[2]), 
             markups.markup_check_registration_result()
         )
+
+@dp.message_handler(content_types = ['any'])
+async def delete_other_func(msg: Message):
+    await bot.delete_message(msg.from_user.id, msg.message_id)
 
 @dp.callback_query_handler()
 async def callback(call):
