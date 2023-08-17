@@ -45,15 +45,14 @@ async def send_info_okrug(user_id, station_num):
             okrug_info_text = MESSAGES['empty_candidate']
             photo = None
         else:
-            okrug_info_text = MESSAGES['candidate_info'].format(okrug_info['num'], okrug_info['candidat'])
-            if SEND_PHOTO:
-                photo = open('img/{}.jpg'.format(okrug_info['num']), 'rb')
+            okrug_info_text = MESSAGES['candidate_info'].format(okrug_info['num'], okrug_info['candidat'], okrug_info['name'])
+            photo = open('img/{}.jpg'.format(okrug_info['num']), 'rb')
+            await send_msg(user_id, photo=photo)
         await send_msg(
             user_id,
             MESSAGES['candidat_stantion_info'].format(okrug_info_text, STATIONS_DESC[station_num-1], str(station_num).zfill(2)),
             markup=markups.markup_registration_completed(),
-            delete=True,
-            photo=photo
+            delete=(photo == None)
         )
 
 async def delete_msg_bot(id):
@@ -64,11 +63,11 @@ async def delete_msg_bot(id):
             pass
         sql_commands.clear_history_bot_msg(msg_id)
 
-async def send_msg(id, text, markup=InlineKeyboardMarkup(), delete=True, photo=None):
+async def send_msg(id, text='', markup=InlineKeyboardMarkup(), delete=True, photo=None):
     if photo == None:
         msg_id = (await bot.send_message(id, text, reply_markup=markup, parse_mode='html')).message_id
     else:
-        msg_id = (await bot.send_photo(id, photo, text, reply_markup=markup, parse_mode='html'))
+        msg_id = (await bot.send_photo(chat_id=id, photo=photo)).message_id
     if delete:
         await delete_msg_bot(id)
     sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO bot_msg VALUES (\'%d\', \'%d\')' % (msg_id, id))
@@ -133,6 +132,12 @@ async def enter_start(msg: Message):
                     await edit(MESSAGES['registration_phone'], markups.markup_cancel())
                     sql_commands.set_status(msg.chat.id, 'reg_phone')
                 elif status == 'my_cand_addres':
+                    await bot.edit_message_text(
+                        MESSAGES['loading'], 
+                        msg.chat.id, 
+                        sql_commands.history_bot_msg(msg.chat.id)[0], 
+                        parse_mode='html'
+                    )
                     sql_commands.set_status(msg.chat.id, 'none')
                     await send_info_okrug(msg.chat.id, station_num)
     
@@ -158,10 +163,10 @@ async def callback(call):
         if call.data in ['start', 'delete_data']:
             data.delete_pre_reg(user_id)
             sql_commands.set_status(user_id, 'none')
-            try:
-                await edit(MESSAGES['start'], markups.markup_start())
-            except :
+            if len(sql_commands.history_bot_msg(user_id)) == 2:
                 await send_msg(user_id, MESSAGES['start'], markups.markup_start())
+            else:
+                await edit(MESSAGES['start'], markups.markup_start())
         
         elif call.data == 'party_program_select':
             await edit(MESSAGES['party_program_select'], markups.markup_party_program_select())

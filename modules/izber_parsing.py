@@ -14,6 +14,8 @@ async def cikrf(street, house):
 
     url = 'http://cikrf.ru/iservices/voter-services/address/search/Новгородская область, город Великий Новгород, {}, {}'.format(street, house.replace('/',''))
 
+    print(url)
+
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0",
     }
