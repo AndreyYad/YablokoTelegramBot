@@ -196,9 +196,13 @@ async def callback(call):
             data.delete_pre_reg(user_id)
             sql_commands.set_status(user_id, 'none')
             if len(sql_commands.history_bot_msg(user_id)) == 2:
-                await send_msg(user_id, MESSAGES['start'], markups.markup_start())
-            else:
-                await edit(MESSAGES['start'], markups.markup_start())
+                try:
+                    msg_photo_id = sql_commands.history_bot_msg(user_id)[0]
+                    await bot.delete_message(user_id, msg_photo_id)
+                    sql_commands.clear_history_bot_msg(msg_photo_id)
+                except exceptions.MessageToDeleteNotFound:
+                    pass
+            await edit(MESSAGES['start'], markups.markup_start())
         
         elif call.data == 'party_program_select':
             await edit(MESSAGES['party_program_select'], markups.markup_party_program_select())
