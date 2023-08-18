@@ -13,6 +13,8 @@ from apscheduler.triggers.cron import CronTrigger
 
 import asyncio 
 
+from datetime import datetime
+
 from modules.markups import markups
 from modules.sql_commands import sql_commands
 from modules.data_commands import data
@@ -119,10 +121,18 @@ async def enter_start(msg: Message):
 
     # Для админа
     if msg.chat.id in ADMIN_ID:
+
+        if msg.text == '/help':
+            await send_msg(msg.from_user.id, MESSAGES['admin_cmds'])
+            sql_commands.set_status(msg.chat.id, 'none')
+
         if msg.text == '/restart':
             for id_ in sql_commands.grab_users_id():
                 await delete_msg_bot(id_)
                 sql_commands.set_status(msg.chat.id, 'none')
+
+        if msg.text == '/time':
+            await send_msg(msg.from_user.id, datetime.now(), delete=False)
 
     #Для народа
     if status == 'reg_name' and len(msg.text.split(' ')) == 2 and msg.text.replace(' ','f').isalpha():
