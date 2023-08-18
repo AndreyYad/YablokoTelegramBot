@@ -86,7 +86,7 @@ async def daily_reset():
 
 async def scheduler():
     scheduler = AsyncIOScheduler()
-    time_trigger = CronTrigger(hour='3', minute='30')
+    time_trigger = CronTrigger(hour='7', minute='30')
     scheduler.add_job(daily_reset, time_trigger)
     scheduler.start()
 
