@@ -2,3 +2,4 @@ aiogram
 aiohttp
 apscheduler
 openpyxl
+pandas
