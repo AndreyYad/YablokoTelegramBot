@@ -127,3 +127,17 @@ class sql_commands():
         conn.close()
 
         return result
+    
+    # Получение всех данных о всех пользователях
+    def grab_voters_info():
+
+        conn = connect('data/yabloko_tables.sql')
+        cur = conn.cursor()
+
+        cur.execute('SELECT name, address, phone FROM voters')
+        result = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        return result

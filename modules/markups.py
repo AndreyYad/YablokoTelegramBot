@@ -2,7 +2,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 class markups():
     # Стартовое меню
-    def markup_start():
+    def markup_start(vip_is):
         markup = InlineKeyboardMarkup()
         markup.row(
             InlineKeyboardButton('Что предлагает «Яблоко»', callback_data='party_program_select'),
@@ -13,6 +13,10 @@ class markups():
             InlineKeyboardButton('Я проголосовал(а)', callback_data='im_vote')
         )
         markup.add(InlineKeyboardButton('Техподдержка бота', url='https://t.me/sup_novgorod_yabloko_bot'))
+
+        if vip_is:
+            markup.add(InlineKeyboardButton('Таблица с данными', callback_data='get_excel'))
+
         return markup
 
     # Выбор части програмы партии
@@ -89,4 +93,10 @@ class markups():
         markup.row(
             InlineKeyboardButton('« Назад', callback_data='start')
         )
+        return markup
+    
+    # Вернуться назад к старту
+    def markup_back_to_start():
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton('« Назад', callback_data='start'))
         return markup

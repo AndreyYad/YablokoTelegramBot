@@ -1,5 +1,5 @@
 from aiogram import Bot
-from aiogram.types import Message, InlineKeyboardMarkup
+from aiogram.types import Message, InlineKeyboardMarkup, InputFile
 from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor, exceptions
 from aiogram.bot import bot
@@ -30,6 +30,9 @@ with open('data/stations_data.json', encoding='utf-8') as file:
 
 with open('z_admins_id') as file:
     ADMIN_ID = [int(id) for id in file.readlines()]
+
+with open('z_vip_id') as file:
+    VIP_USER_ID = [int(id) for id in file.readlines()]
 
 with open('z_token') as file:
     TOKEN = file.read()
@@ -70,11 +73,13 @@ async def delete_msg_bot(id):
             pass
         sql_commands.clear_history_bot_msg(msg_id)
 
-async def send_msg(id, text='', markup=InlineKeyboardMarkup(), delete=True, photo=None):
-    if photo == None:
-        msg_id = (await bot.send_message(id, text, reply_markup=markup, parse_mode='html')).message_id
-    else:
+async def send_msg(id, text='', markup=InlineKeyboardMarkup(), delete=True, photo=None, document=None):
+    if document != None:
+        msg_id = (await bot.send_document(chat_id=id, document=document, reply_markup=markup)).message_id
+    elif photo != None:
         msg_id = (await bot.send_photo(chat_id=id, photo=photo)).message_id
+    else:
+        msg_id = (await bot.send_message(id, text, reply_markup=markup, parse_mode='html')).message_id
     if delete:
         await delete_msg_bot(id)
     sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO bot_msg VALUES (\'%d\', \'%d\')' % (msg_id, id))
@@ -100,9 +105,9 @@ async def start_func(msg: Message, send=True):
     sql_commands.set_status(msg.chat.id, 'none')
 
     if send:
-        await send_msg(msg.from_user.id, MESSAGES['start'], markup=markups.markup_start())
+        await send_msg(msg.chat.id, MESSAGES['start'], markup=markups.markup_start(msg.chat.id in VIP_USER_ID))
 
-    await bot.delete_message(msg.from_user.id, msg.message_id)
+    await bot.delete_message(msg.chat.id, msg.message_id)
 
 @dp.message_handler()
 async def enter_start(msg: Message):
@@ -186,7 +191,7 @@ async def delete_other_func(msg: Message):
 async def callback(call):
 
     user_id = call.message.chat.id
-    edit = lambda text, markup: bot.edit_message_text(text, user_id, call.message.message_id, reply_markup=markup, parse_mode='html')
+    edit = lambda text, markup=InlineKeyboardMarkup(): bot.edit_message_text(text, user_id, call.message.message_id, reply_markup=markup, parse_mode='html')
     
     if call.data == 'delete_data':
         data.delete_voter_data(user_id)
@@ -202,7 +207,10 @@ async def callback(call):
                     sql_commands.clear_history_bot_msg(msg_photo_id)
                 except exceptions.MessageToDeleteNotFound:
                     pass
-            await edit(MESSAGES['start'], markups.markup_start())
+            try:
+                await edit(MESSAGES['start'], markups.markup_start(user_id in VIP_USER_ID))
+            except exceptions.BadRequest:
+                await send_msg(user_id, MESSAGES['start'], markup=markups.markup_start(user_id in VIP_USER_ID))
         
         elif call.data == 'party_program_select':
             await edit(MESSAGES['party_program_select'], markups.markup_party_program_select())
@@ -244,13 +252,17 @@ async def callback(call):
                 await edit(MESSAGES['enter_address'], markups.markup_cancel())
 
         elif call.data == 'have_address':
-            await edit(MESSAGES['loading'], markup=InlineKeyboardMarkup())
+            await edit(MESSAGES['loading'])
             address = data.text_to_address(sql_commands.grab_registration_data(user_id)[1])
             station_num = await lamb_izber_uchastok(address)
             await send_info_okrug(user_id, station_num)
 
         elif call.data == 'im_vote':
             await edit(MESSAGES['im_vote'], markups.markup_registration_completed())
+
+        elif call.data == 'get_excel':
+            await edit(MESSAGES['loading_excel'])
+            await send_msg(user_id, markup=markups.markup_back_to_start(), document=data.get_excel())
 
     except exceptions.MessageNotModified:
         pass

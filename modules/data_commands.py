@@ -1,5 +1,14 @@
-from modules.sql_commands import sql_commands
-from modules.izber_parsing import izber_uchastok
+from pandas import DataFrame
+from io import BytesIO
+from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
+from datetime import datetime
+from pytz import timezone
+
+try:
+    from modules.sql_commands import sql_commands
+except ModuleNotFoundError:
+    from sql_commands import sql_commands
 
 class data():
     # Создание таблиц
@@ -57,7 +66,52 @@ class data():
                     result = True
 
         return result
+    
+    # Получение ексель таблицы с даными всех пользователей
+    def get_excel():
+
+        sql_data = sql_commands.grab_voters_info()
+
+        buffer = BytesIO()
+
+        date = timezone('Asia/Tomsk').localize(datetime.now()).astimezone(timezone('Europe/Moscow'))
+        
+        add_zero = lambda num: str(num).zfill(2)
+
+        buffer.name = 'данные_пользователей {}-{}-2023 {}-{}.xlsx'.format(add_zero(date.day), add_zero(date.month), add_zero(date.hour), add_zero(date.minute))
+        DataFrame(sql_data).to_excel(buffer, index=False)
+        buffer.seek(0)
+
+        workbook = load_workbook(buffer)
+
+        sheet = workbook.active
+
+        sheet['A1'] = 'Имя Фамилия'
+        sheet['B1'] = 'Адрес'
+        sheet['C1'] = 'Телефон'
+
+
+        # Определение ширины столбцов на основе самой длинной записи в них
+        for column in sheet.columns:
+            max_length = 0
+            column_letter = get_column_letter(column[0].column)
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except TypeError:
+                    continue
+            adjusted_width = (max_length + 2)
+            sheet.column_dimensions[column_letter].width = adjusted_width
+
+        workbook.save(buffer)
+
+        buffer.seek(0)
+
+        return buffer
 
 if __name__ == '__main__':
-    text = 'Кочетова, д. 2'
-    print(data.text_to_address(text))
+    # with open('qwe.xlsx', 'wb') as file:
+    #     file.write(data.get_excel())
+    date = timezone('Asia/Tomsk').localize(datetime.now()).astimezone(timezone('Europe/Moscow'))
+    print(date.hour)
