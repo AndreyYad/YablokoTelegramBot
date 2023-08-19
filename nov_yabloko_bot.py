@@ -28,18 +28,11 @@ with open('data/okruga_data.json', encoding='utf-8') as file:
 with open('data/stations_data.json', encoding='utf-8') as file:
     STATIONS_DESC = load(file)
 
-with open('z_admins_id') as file:
-    ADMIN_ID = [int(id) for id in file.readlines()]
-
-with open('z_vip_id') as file:
-    VIP_USER_ID = [int(id) for id in file.readlines()]
-
-with open('z_token') as file:
-    TOKEN = file.read()
-
-# TOKEN = environ['TELEGRAM_BOT_TOKEN']
-
-SEND_PHOTO = True
+with open('config.json') as file:
+    config = load(file)
+    TOKEN = config['token']
+    ADMIN_ID = config['admins_id']
+    VIP_USER_ID = config['vip_id']
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)

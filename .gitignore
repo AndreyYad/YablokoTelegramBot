@@ -159,7 +159,6 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-z_token
-z_admins_id
+config.json
 data/bot_tables.sql
 data/yabloko_tables.sql
