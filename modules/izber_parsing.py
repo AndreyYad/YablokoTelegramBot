@@ -141,8 +141,8 @@ async def izber_uchastok(street, house):
 
 if __name__ == '__main__':
     # 'Набережная Александра Невского', 'д. 22/2'
-    street = 'Фёдоровский Ручей'
-    house = '10/48'
+    street = 'Технический проезд'
+    house = '3'
     # print(asyncio.run(izber_uchastok(street, house)))
 
     print(asyncio.run(cikrf(street, house)))

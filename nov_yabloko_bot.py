@@ -46,14 +46,21 @@ async def send_info_okrug(user_id, station_num):
         okrug_info = [okrug for okrug in OKRUGA if station_num in okrug['stations']][0]
         if okrug_info['name'] == '':
             okrug_info_text = MESSAGES['empty_candidate']
+            how_vote_text = MESSAGES['how_vote_empty']
             photo = None
         else:
-            okrug_info_text = MESSAGES['candidate_info'].format(okrug_info['num'], okrug_info['candidat'], okrug_info['name'])
+            okrug_info_text = MESSAGES['candidate_info'].format(okrug_info['num'], okrug_info['description'], okrug_info['name'])
+            how_vote_text = MESSAGES['how_vote_cand'].format(okrug_info['name_vin'])
             photo = open('img/{}.jpg'.format(okrug_info['num']), 'rb')
             await send_msg(user_id, photo=photo)
         await send_msg(
             user_id,
-            MESSAGES['candidat_stantion_info'].format(okrug_info_text, STATIONS_DESC[station_num-1], str(station_num).zfill(2)),
+            MESSAGES['candidat_stantion_info'].format(
+                okrug_info_text, 
+                STATIONS_DESC[station_num-1], 
+                str(station_num).zfill(2), 
+                how_vote_text
+            ),
             markup=markups.markup_registration_completed(),
             delete=(photo == None)
         )
