@@ -1,12 +1,28 @@
 from aiohttp import ClientSession
 from json import loads, dump, load
 from json.decoder import JSONDecodeError
+from itertools import product
 
 import asyncio 
 
 async def to_json(obj, name_file='output'):
     with open(f'{name_file}.json', 'w', encoding='utf-8') as file:
         dump(obj, file, indent=4, ensure_ascii=False)
+
+async def list_registers(text):
+    result = []
+    text = text.lower().split(' ')
+    list_comb = [''.join(item) for item in list(product('10', repeat=len(text)))]
+    for comb in list_comb:
+        new_text = ''
+        for index in range(len(comb)):
+            if comb[index] == '0':
+                new_text += text[index] + ' '
+            else:
+                new_text += text[index].title() + ' '
+        result.append(new_text[:-1])
+
+    return result
 
 async def cikrf(street, house):
 
@@ -125,16 +141,16 @@ async def izber_uchastok(street, house):
     house = house.replace(', корп. ', ' ').replace('д. ', '').lstrip().rstrip()
     street = street.lstrip().rstrip()
 
-    # print(f'прием - [{street},{house}]')
     cik_ver = await cikrf(street, house)
     if cik_ver != None:
         print('ЦИК')
         return cik_ver
-    
-    # mfc_ver = await mfc(street, house)
-    # if mfc_ver != None:
-    #     print('МФЦ')
-    #     return mfc_ver
+    else:
+        for ver_street in await list_registers(street):
+            cik_ver = await cikrf(ver_street, house)
+            if cik_ver != None:
+                print('ЦИК')
+                return cik_ver
     
     print('Улица полностью')
     return await check_full_streets(street)
@@ -145,4 +161,5 @@ if __name__ == '__main__':
     house = '3'
     # print(asyncio.run(izber_uchastok(street, house)))
 
-    print(asyncio.run(cikrf(street, house)))
+    # print(asyncio.run(cikrf(street, house)))
+    print(asyncio.run(list_registers('ad add assds adsdsd')))

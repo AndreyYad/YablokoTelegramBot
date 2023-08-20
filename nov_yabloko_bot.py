@@ -156,8 +156,12 @@ async def enter_start(msg: Message):
 
             if station_num != None:
 
+                text = msg.text.lower().split(',')
+                text[0] = text[0].title()
+                text = ','.join(text)
+
                 sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO pre_reg (id) VALUES (\'%d\')' % (msg.chat.id))
-                sql_commands.change_in_table('bot', 'UPDATE pre_reg SET address = \'%s\' WHERE id = \'%d\'' % (msg.text, msg.chat.id))
+                sql_commands.change_in_table('bot', 'UPDATE pre_reg SET address = \'%s\' WHERE id = \'%d\'' % (text, msg.chat.id))
                 user_info = sql_commands.grab_pre_reg_data(msg.chat.id)
 
                 if status == 'reg_address':

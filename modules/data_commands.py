@@ -79,6 +79,7 @@ class data():
         add_zero = lambda num: str(num).zfill(2)
 
         buffer.name = 'данные_пользователей {}-{}-2023 {}-{}.xlsx'.format(add_zero(date.day), add_zero(date.month), add_zero(date.hour), add_zero(date.minute))
+        print(buffer.name)
         DataFrame(sql_data).to_excel(buffer, index=False)
         buffer.seek(0)
 
