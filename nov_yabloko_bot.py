@@ -23,7 +23,7 @@ from modules.data_commands import data
 from modules.izber_parsing import izber_uchastok
 from modules.logger import setup_logger
 
-from modules.messages import MESSAGES
+from modules.messages import MESSAGES, ERROR
 
 with open('data/okruga_data.json', encoding='utf-8') as file:
     OKRUGA = load(file)
@@ -122,13 +122,17 @@ async def start_func(msg: Message, send=True):
 @dp.message_handler()
 async def enter_start(msg: Message):
 
-    edit = lambda text, markup: bot.edit_message_text(
-        text, 
-        msg.chat.id, 
-        sql_commands.history_bot_msg(msg.chat.id)[-1], 
-        reply_markup=markup, 
-        parse_mode='html'
-    )
+    async def edit(text, markup):
+        try:
+            await bot.edit_message_text(
+                text, 
+                msg.chat.id, 
+                sql_commands.history_bot_msg(msg.chat.id)[-1], 
+                reply_markup=markup, 
+                parse_mode='html'
+            )
+        except exceptions.MessageNotModified:
+            pass
 
     status = sql_commands.check_status(msg.chat.id)
 
@@ -195,9 +199,11 @@ async def enter_start(msg: Message):
                     logger.info(f"{msg.chat.id}: участок и округ определены ({text})")
 
             else:
+                await edit(MESSAGES['registration_address']+ERROR['not_found_address'], markups.markup_cancel())
                 logger.warning(f"{msg.chat.id}: адрес не определён ({msg.text})")
 
         else:
+            await edit(MESSAGES['registration_address']+ERROR['not_format_address'], markups.markup_cancel())
             logger.warning(f"{msg.chat.id}: адрес не верного формата ({msg.text})")
 
     
