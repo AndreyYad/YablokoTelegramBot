@@ -95,6 +95,7 @@ async def daily_reset():
     for id_ in sql_commands.grab_users_id():
         await delete_msg_bot(id_)
         sql_commands.set_status(id_, 'none')
+    logger.info(f"сброс (запланированный)")
 
 async def scheduler():
     scheduler = AsyncIOScheduler()
@@ -144,6 +145,7 @@ async def enter_start(msg: Message):
             for id_ in sql_commands.grab_users_id():
                 await delete_msg_bot(id_)
                 sql_commands.set_status(msg.chat.id, 'none')
+            logger.info(f"сброс (команда)")
 
         if msg.text == '/time':
             await send_msg(msg.from_user.id, datetime.now(), delete=False)
