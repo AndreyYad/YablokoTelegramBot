@@ -199,11 +199,11 @@ async def enter_start(msg: Message):
                     logger.info(f"{msg.chat.id}: участок и округ определены ({text})")
 
             else:
-                await edit(MESSAGES['registration_address']+ERROR['not_found_address'], markups.markup_cancel())
+                await edit(MESSAGES['registration_address']+ERROR['not_found_address'].format(msg.text), markups.markup_cancel())
                 logger.warning(f"{msg.chat.id}: адрес не определён ({msg.text})")
 
         else:
-            await edit(MESSAGES['registration_address']+ERROR['not_format_address'], markups.markup_cancel())
+            await edit(MESSAGES['registration_address']+ERROR['not_format_address'].format(msg.text), markups.markup_cancel())
             logger.warning(f"{msg.chat.id}: адрес не верного формата ({msg.text})")
 
     
