@@ -15,10 +15,13 @@ import asyncio
 
 from datetime import datetime
 
+from loguru import logger
+
 from modules.markups import markups
 from modules.sql_commands import sql_commands
 from modules.data_commands import data
 from modules.izber_parsing import izber_uchastok
+from modules.logger import setup_logger
 
 from modules.messages import MESSAGES
 
@@ -39,7 +42,11 @@ dp = Dispatcher(bot)
 
 lamb_izber_uchastok = lambda address: izber_uchastok(address['street'], '{} {}'.format(address['house'], address['korp']))
 
-print('Бот запущен')
+setup_logger()
+
+logger.info("Бот запущен")
+
+# print('Бот запущен')
 
 # Информация о кандите округа и о избирательном участке
 async def send_info_okrug(user_id, station_num):
@@ -109,6 +116,8 @@ async def start_func(msg: Message, send=True):
 
     await bot.delete_message(msg.chat.id, msg.message_id)
 
+    logger.info(f"{msg.chat.id}: команда /start")
+
 @dp.message_handler()
 async def enter_start(msg: Message):
 
@@ -140,10 +149,14 @@ async def enter_start(msg: Message):
             await send_msg(msg.from_user.id, datetime.now(), delete=False)
 
     #Для народа
-    if status == 'reg_name' and len(msg.text.split(' ')) == 2 and msg.text.replace(' ','f').isalpha():
-        sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO pre_reg (id, name) VALUES (\'%d\', \'%s\')' % (msg.chat.id, msg.text))
-        await edit(MESSAGES['registration_address'], markups.markup_cancel())
-        sql_commands.set_status(msg.chat.id, 'reg_address')
+    if status == 'reg_name':
+        if len(msg.text.split(' ')) == 2 and msg.text.replace(' ','f').isalpha():
+            sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO pre_reg (id, name) VALUES (\'%d\', \'%s\')' % (msg.chat.id, msg.text))
+            await edit(MESSAGES['registration_address'], markups.markup_cancel())
+            sql_commands.set_status(msg.chat.id, 'reg_address')
+            logger.info(f"{msg.chat.id}: имя фамилия заполнены ({msg.text})")
+        else:
+            logger.warning(f"{msg.chat.id}: имя фамилия не верного формата ({msg.text})")
 
     elif status in ['reg_address', 'my_cand_addres']:
         
@@ -167,6 +180,7 @@ async def enter_start(msg: Message):
                 if status == 'reg_address':
                     await edit(MESSAGES['registration_phone'], markups.markup_cancel())
                     sql_commands.set_status(msg.chat.id, 'reg_phone')
+                    logger.info(f"{msg.chat.id}: адрес зарегистрирован ({text})")
                 elif status == 'my_cand_addres':
                     await bot.edit_message_text(
                         MESSAGES['loading'], 
@@ -176,15 +190,27 @@ async def enter_start(msg: Message):
                     )
                     sql_commands.set_status(msg.chat.id, 'none')
                     await send_info_okrug(msg.chat.id, station_num)
+                    logger.info(f"{msg.chat.id}: участок и округ определены ({text})")
+
+            else:
+                logger.warning(f"{msg.chat.id}: адрес не определён ({msg.text})")
+
+        else:
+            logger.warning(f"{msg.chat.id}: адрес не верного формата ({msg.text})")
+
     
-    elif status == 'reg_phone' and len(msg.text) == 12 and msg.text.startswith('+7') and msg.text[2:].isdigit():
-        sql_commands.change_in_table('bot', 'UPDATE pre_reg SET phone = \'%s\' WHERE id = \'%d\'' % (msg.text, msg.chat.id))
-        sql_commands.set_status(msg.chat.id, 'none')
-        user_info = sql_commands.grab_pre_reg_data(msg.chat.id)
-        await edit(
-            MESSAGES['check_registration_result'].format(user_info[0], user_info[1], user_info[2]), 
-            markups.markup_check_registration_result()
-        )
+    elif status == 'reg_phone':
+        if len(msg.text) == 12 and msg.text.startswith('+7') and msg.text[2:].isdigit():
+            sql_commands.change_in_table('bot', 'UPDATE pre_reg SET phone = \'%s\' WHERE id = \'%d\'' % (msg.text, msg.chat.id))
+            sql_commands.set_status(msg.chat.id, 'none')
+            user_info = sql_commands.grab_pre_reg_data(msg.chat.id)
+            await edit(
+                MESSAGES['check_registration_result'].format(user_info[0], user_info[1], user_info[2]), 
+                markups.markup_check_registration_result()
+            )
+            logger.info(f"{msg.chat.id}: телефон зарегистрирован ({msg.text})")
+        else:
+            logger.warning(f"{msg.chat.id}: телефон не верного формата ({msg.text})")
 
 # Удаление лишних сообщений (Фото, видео, стикеры и др.)
 @dp.message_handler(content_types = ['any'])
@@ -199,6 +225,7 @@ async def callback(call):
     
     if call.data == 'delete_data':
         data.delete_voter_data(user_id)
+        logger.info(f"{user_id}: данные регистрации удалены")
 
     try:
         if call.data in ['start', 'delete_data']:
@@ -236,6 +263,7 @@ async def callback(call):
             data.delete_pre_reg(user_id)
             sql_commands.set_status(user_id, 'reg_name')
             await edit(MESSAGES['registration_name'], markups.markup_cancel())
+            logger.info(f"{user_id}: начало регистрации")
 
         elif call.data == 'registration_completed':
             voter_data = sql_commands.grab_pre_reg_data(user_id)
@@ -247,6 +275,7 @@ async def callback(call):
             data.delete_pre_reg(user_id)
             sql_commands.set_status(user_id, 'none')
             await edit(MESSAGES['registration_completed'], markups.markup_registration_completed())
+            logger.info(f"{user_id}: регистрация пройдена")
 
         elif call.data.startswith('my_candidate_address'):
             if sql_commands.check_registration(user_id) and call.data == 'my_candidate_address':
@@ -257,9 +286,11 @@ async def callback(call):
 
         elif call.data == 'have_address':
             await edit(MESSAGES['loading'])
-            address = data.text_to_address(sql_commands.grab_registration_data(user_id)[1])
+            addres_orig = sql_commands.grab_registration_data(user_id)[1]
+            address = data.text_to_address(addres_orig)
             station_num = await lamb_izber_uchastok(address)
             await send_info_okrug(user_id, station_num)
+            logger.info(f"{user_id}: участок и округ определены ({addres_orig})")
 
         elif call.data == 'im_vote':
             await edit(MESSAGES['im_vote'], markups.markup_registration_completed())
@@ -267,6 +298,7 @@ async def callback(call):
         elif call.data == 'get_excel':
             await edit(MESSAGES['loading_excel'])
             await send_msg(user_id, markup=markups.markup_back_to_start(), document=data.get_excel())
+            logger.info(f"{user_id}: выдача файла таблицы")
 
     except exceptions.MessageNotModified:
         pass

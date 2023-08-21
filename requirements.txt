@@ -3,3 +3,4 @@ aiohttp
 apscheduler
 openpyxl
 pandas
+loguru

@@ -2,8 +2,14 @@ from aiohttp import ClientSession
 from json import loads, dump, load
 from json.decoder import JSONDecodeError
 from itertools import product
+from loguru import logger
 
 import asyncio 
+
+try:
+    from modules.logger import setup_logger
+except ModuleNotFoundError:
+    from logger import setup_logger
 
 async def to_json(obj, name_file='output'):
     with open(f'{name_file}.json', 'w', encoding='utf-8') as file:
@@ -30,7 +36,7 @@ async def cikrf(street, house):
 
     url = 'http://cikrf.ru/iservices/voter-services/address/search/Новгородская область, город Великий Новгород, {}, {}'.format(street, house.replace('/',''))
 
-    print(url)
+    logger.debug(f'ссылка поиска: {url}')
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0",
@@ -43,7 +49,6 @@ async def cikrf(street, house):
             try:
                 output = loads(await server.text())
             except JSONDecodeError:
-                print(url)
                 return None
 
             try:
@@ -138,28 +143,33 @@ async def check_full_streets(street):
             return None
 
 async def izber_uchastok(street, house):
+
+    setup_logger()
+
     house = house.replace(', корп. ', ' ').replace('д. ', '').lstrip().rstrip()
     street = street.lstrip().rstrip()
 
+    logger.debug(f'поиск: {street}, {house}')
+
     cik_ver = await cikrf(street, house)
     if cik_ver != None:
-        print('ЦИК')
+        # print('ЦИК')
         return cik_ver
     else:
         for ver_street in await list_registers(street):
             cik_ver = await cikrf(ver_street, house)
             if cik_ver != None:
-                print('ЦИК')
+                # print('ЦИК')
                 return cik_ver
     
-    print('Улица полностью')
+    # print('Улица полностью')
     return await check_full_streets(street)
 
 if __name__ == '__main__':
     # 'Набережная Александра Невского', 'д. 22/2'
     street = 'Технический проезд'
     house = '3'
-    # print(asyncio.run(izber_uchastok(street, house)))
+    print(asyncio.run(izber_uchastok(street, house)))
 
     # print(asyncio.run(cikrf(street, house)))
-    print(asyncio.run(list_registers('ad add assds adsdsd')))
+    # print(asyncio.run(list_registers('ad add assds adsdsd')))
