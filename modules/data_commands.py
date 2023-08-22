@@ -56,6 +56,9 @@ class data():
         else:
             address = None
 
+        if address['street'] in ['Корсунова', 'А. Корсунова', 'проспект А. Корсунова']:
+            address['street'] = 'проспект Александра Корсунова'
+
         return address
 
     # Проверка текста на прописание адреса
