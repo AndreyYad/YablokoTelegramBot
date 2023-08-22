@@ -50,7 +50,7 @@ class data():
         if data.check_text_address(text):
             text = text.split(',')
             address['street'] = text[0].title()
-            address['house'] = text[1].replace('д.', '')
+            address['house'] = text[1].replace('д.', '').upper()
             if len(text) == 3:
                 address['korp'] = text[2].replace('корп.', '')
         else:
