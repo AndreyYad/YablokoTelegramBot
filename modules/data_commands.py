@@ -38,12 +38,21 @@ class data():
             'korp' : ''
         }
 
+        text = text.split(',', 1)
+
+        try:
+            text = text[0] + ',' + text[1].replace(' ', '')
+        except IndexError:
+            return None
+
+        text = text.lower()
+
         if data.check_text_address(text):
             text = text.split(',')
-            address['street'] = text[0]
-            address['house'] = text[1].replace(' д. ', '')
+            address['street'] = text[0].title()
+            address['house'] = text[1].replace('д.', '')
             if len(text) == 3:
-                address['korp'] = text[2].replace(' корп. ', '')
+                address['korp'] = text[2].replace('корп.', '')
         else:
             address = None
 
@@ -56,14 +65,22 @@ class data():
 
         if text.count(',') in [1,2]:
             text = text.split(',')
-            if text[1].startswith(' д. ') and len(text[1]) > 4:
+            if text[1].startswith('д.') and len(text[1]) > 2:
                 if len(text) == 3:
-                    if text[2].startswith(' корп. ') and len(text[2]) > 7:
+                    if text[2].startswith('корп.') and len(text[2]) > 5:
                         result = True
                 elif len(text) == 2:
                     result = True
 
         return result
+    
+    # Получение текста адреса из словаря
+    def address_to_text(address):
+
+        if address['korp'] == '':
+            return '{}, д. {}'.format(address['street'] , address['house'])
+        else:
+            return '{}, д. {}, корп. {}'.format(address['street'] , address['house'], address['korp'])
     
     # Получение ексель таблицы с даными всех пользователей
     def get_excel():
@@ -109,7 +126,4 @@ class data():
         return buffer
 
 if __name__ == '__main__':
-    # with open('qwe.xlsx', 'wb') as file:
-    #     file.write(data.get_excel())
-    date = timezone('Asia/Tomsk').localize(datetime.now()).astimezone(timezone('Europe/Moscow'))
-    print(date.hour)
+    print(data.address_to_text(data.text_to_address('jrn, д.       123,Корп.2')))

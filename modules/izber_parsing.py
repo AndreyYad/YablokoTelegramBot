@@ -32,8 +32,6 @@ async def list_registers(text):
 
 async def cikrf(street, house):
 
-    check_address = lambda orig, new: new == orig
-
     url = 'http://cikrf.ru/iservices/voter-services/address/search/Новгородская область, город Великий Новгород, {}, {}'.format(street, house.replace('/',''))
 
     logger.debug(f'ссылка поиска: {url}')
@@ -77,63 +75,6 @@ async def cikrf(street, house):
                     return None
 
                 return int(uchastok_dict['name'][-2:])
-            
-async def mfc(street, house):
-
-    # print(f'[{street},{house}]')
-
-    url = 'https://mfc.zone/rest/getCikLocations'
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0",
-    }
-
-    data = {
-        'intid' : 135637827259064320000378637,
-        'parentId' : 4744673537
-    }
-
-    async with ClientSession() as session:
-        async with session.post(url, headers=headers, data=data) as response:
-            streets = loads(await response.text())
-
-            for street_ in streets:
-                if street in street_['text']:
-                    street_data = street_
-                    break
-            else:
-                return None
-
-            data = {
-                'intid' : street_data['intid'],
-                'parentId' : street_data['id']
-            }
-
-            async with session.post(url, headers=headers, data=data) as response:
-                houses = loads(await response.text())
-
-                for house_ in houses:
-                    if house == house_['text']:
-                        house_data = house_
-                        break
-                else:
-                    return None
-                
-                data = {
-                    'intid' : house_data['intid'],
-                    'parentId' : house_data['id'],
-                    'region': 'Новгородская область'
-                }
-
-                url = 'https://mfc.zone/rest/getCikPlace'
-            
-                async with session.post(url, headers=headers, data=data) as response:
-                    uchastok_dict = loads(await response.text())
-                    
-                    if uchastok_dict == None:
-                        return None
-
-                    return int(uchastok_dict['name'][-2:])
                 
 async def check_full_streets(street):
     with open('data/full_streets.json', encoding='utf-8') as file:
@@ -153,13 +94,11 @@ async def izber_uchastok(street, house):
 
     cik_ver = await cikrf(street, house)
     if cik_ver != None:
-        # print('ЦИК')
         return cik_ver
     else:
         for ver_street in await list_registers(street):
             cik_ver = await cikrf(ver_street, house)
             if cik_ver != None:
-                # print('ЦИК')
                 return cik_ver
     
     # print('Улица полностью')

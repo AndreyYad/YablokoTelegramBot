@@ -167,7 +167,6 @@ async def enter_start(msg: Message):
     elif status in ['reg_address', 'my_cand_addres']:
         
         address = data.text_to_address(msg.text)
-        # print(address)
 
         if address != None:
 
@@ -175,9 +174,7 @@ async def enter_start(msg: Message):
 
             if station_num != None:
 
-                text = msg.text.lower().split(',')
-                text[0] = text[0].title()
-                text = ','.join(text)
+                text = data.address_to_text(address)
 
                 sql_commands.change_in_table('bot', 'INSERT OR IGNORE INTO pre_reg (id) VALUES (\'%d\')' % (msg.chat.id))
                 sql_commands.change_in_table('bot', 'UPDATE pre_reg SET address = \'%s\' WHERE id = \'%d\'' % (text, msg.chat.id))
