@@ -49,21 +49,24 @@ async def cikrf(street, house):
             except JSONDecodeError:
                 return None
 
-            try:
+            for address in output:
+                try:
+                        name_out = address['name'].replace('Новгородская область, город Великий Новгород, ', '')
+                        if ' кв. ' in name_out:
+                            name_out = name_out[:name_out.find(', кв.')]
+                        
+                        # print(f'[{street}, д. {house}]')
+                        # print(f'[{name_out}]')
 
-                name_out = output[0]['name'].replace('Новгородская область, город Великий Новгород, ', '')
-                if ' кв. ' in name_out:
-                    name_out = name_out[:name_out.find(', кв.')]
-                
-                # print(f'[{street}, д. {house}]')
-                # print(f'[{name_out}]')
-
-                if f'{street}, д. {house}' != name_out:
-                    return None
+                        if f'{street}, д. {house}' != name_out:
+                            continue
 
 
-                district_id = output[0]["id"]
-            except IndexError:
+                        district_id = address["id"]
+                        break
+                except IndexError:
+                    continue
+            else:
                 return None
             
             async with session.get(f"http://cikrf.ru/iservices/voter-services/committee/address/{district_id}", headers=headers) as response:
@@ -106,8 +109,8 @@ async def izber_uchastok(street, house):
 
 if __name__ == '__main__':
     # 'Набережная Александра Невского', 'д. 22/2'
-    street = 'Технический проезд'
-    house = '3'
+    street = 'Воскресенский бульвар'
+    house = '10'
     print(asyncio.run(izber_uchastok(street, house)))
 
     # print(asyncio.run(cikrf(street, house)))

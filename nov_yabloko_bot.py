@@ -170,6 +170,13 @@ async def enter_start(msg: Message):
 
         if address != None:
 
+            await bot.edit_message_text(
+                MESSAGES['loading'], 
+                msg.chat.id, 
+                sql_commands.history_bot_msg(msg.chat.id)[0], 
+                parse_mode='html'
+            )
+
             station_num = await lamb_izber_uchastok(address)
 
             if station_num != None:
@@ -185,12 +192,6 @@ async def enter_start(msg: Message):
                     sql_commands.set_status(msg.chat.id, 'reg_phone')
                     logger.info(f"{msg.chat.id}: адрес зарегистрирован ({text})")
                 elif status == 'my_cand_addres':
-                    await bot.edit_message_text(
-                        MESSAGES['loading'], 
-                        msg.chat.id, 
-                        sql_commands.history_bot_msg(msg.chat.id)[0], 
-                        parse_mode='html'
-                    )
                     sql_commands.set_status(msg.chat.id, 'none')
                     await send_info_okrug(msg.chat.id, station_num)
                     logger.info(f"{msg.chat.id}: участок и округ определены ({text})")
