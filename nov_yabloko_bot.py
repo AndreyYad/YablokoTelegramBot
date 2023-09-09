@@ -1,8 +1,7 @@
 from aiogram import Bot
-from aiogram.types import Message, InlineKeyboardMarkup, InputFile
+from aiogram.types import Message, InlineKeyboardMarkup
 from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor, exceptions
-from aiogram.bot import bot
 
 # from os import environ
 
@@ -16,6 +15,8 @@ import asyncio
 from datetime import datetime
 
 from loguru import logger
+
+from os import listdir, remove
 
 from modules.markups import markups
 from modules.sql_commands import sql_commands
@@ -84,7 +85,7 @@ async def send_msg(id, text='', markup=InlineKeyboardMarkup(), delete=True, phot
     if document != None:
         msg_id = (await bot.send_document(chat_id=id, document=document, reply_markup=markup)).message_id
     elif photo != None:
-        msg_id = (await bot.send_photo(chat_id=id, photo=photo)).message_id
+        msg_id = (await bot.send_photo(chat_id=id, photo=photo, caption=text, parse_mode='html', reply_markup=markup)).message_id
     else:
         msg_id = (await bot.send_message(id, text, reply_markup=markup, parse_mode='html')).message_id
     if delete:
@@ -218,6 +219,20 @@ async def enter_start(msg: Message):
         else:
             logger.warning(f"{msg.chat.id}: телефон не верного формата ({msg.text})")
 
+@dp.message_handler(content_types = ['photo'])
+async def get_photo(msg: Message):
+
+    try:
+        if sql_commands.check_status(msg.from_id).startswith('vote_'):
+            vote = sql_commands.check_status(msg.from_id).replace('vote_', '')
+            await msg.photo[-1].download(destination_file='photo_vote/{}/{} {}.jpg'.format(vote, msg.from_id, sql_commands.grab_registration_data(msg.from_id)[0]))
+            sql_commands.set_status(msg.from_id, 'none')
+            await bot.edit_message_text(MESSAGES['already_get_photo'], msg.from_id, sql_commands.history_bot_msg(msg.from_id)[-1], reply_markup=markups.markup_registration_completed(), parse_mode='html')
+    except exceptions.MessageNotModified:
+        pass
+
+    await bot.delete_message(msg.from_user.id, msg.message_id)
+
 # Удаление лишних сообщений (Фото, видео, стикеры и др.)
 @dp.message_handler(content_types = ['any'])
 async def delete_other_func(msg: Message):
@@ -299,12 +314,34 @@ async def callback(call):
             logger.info(f"{user_id}: участок и округ определены ({addres_orig})")
 
         elif call.data == 'im_vote':
-            await edit(MESSAGES['im_vote'], markups.markup_registration_completed())
+            sql_commands.set_status(user_id, 'none')
+            if sql_commands.check_registration(user_id):
+                await edit(MESSAGES['im_vote'], markups.markup_im_vote())
+            else:
+                await edit(MESSAGES['im_vote_need_reg'], markups.markup_im_vote_need_reg())
 
         elif call.data == 'get_excel':
             await edit(MESSAGES['loading_excel'])
             await send_msg(user_id, markup=markups.markup_back_to_start(), document=data.get_excel())
             logger.info(f"{user_id}: выдача файла таблицы")
+
+        elif call.data.startswith('vote_'):
+            vote = call.data.replace('vote_','')
+            if vote == 'party':
+                name_bullet = 'партийный список'
+            else:
+                name_bullet = 'одномандатного кандидата'
+            if not data.check_photo_vote(user_id, vote):
+                sql_commands.set_status(user_id, f'vote_{vote}')
+                await edit(MESSAGES['send_vote'].format(name_bullet), markups.markup_back_to_bul())
+            else:
+                photo = [open(f'photo_vote/{vote}/{name_file}', 'rb') for name_file in listdir(f'photo_vote/{vote}') if name_file.startswith(str(user_id))][0]
+                await send_msg(user_id, MESSAGES['we_have_photo'].format(name_bullet), photo=photo, markup=markups.markup_already_photo(vote))
+
+        elif call.data.startswith('delete_photo_'):
+            vote = call.data.replace('delete_photo_','')
+            remove([f'photo_vote/{vote}/{name_file}' for name_file in listdir(f'photo_vote/{vote}') if name_file.startswith(str(user_id))][0])
+            await send_msg(user_id, MESSAGES['delete_photo'], markup=markups.markup_registration_completed())
 
     except exceptions.MessageNotModified:
         pass

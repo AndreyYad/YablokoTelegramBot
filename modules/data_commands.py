@@ -4,6 +4,7 @@ from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 from datetime import datetime
 from pytz import timezone
+from os import listdir
 
 try:
     from modules.sql_commands import sql_commands
@@ -127,6 +128,9 @@ class data():
         buffer.seek(0)
 
         return buffer
+    
+    def check_photo_vote(user_id: int, vote: str):
+        return len([file for file in listdir(f'photo_vote/{vote}') if file.startswith(str(user_id))]) == 1
 
 if __name__ == '__main__':
     print(data.address_to_text(data.text_to_address('jrn, д.       123,Корп.2')))

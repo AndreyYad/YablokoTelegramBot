@@ -100,3 +100,33 @@ class markups():
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton('« Назад', callback_data='start'))
         return markup
+    
+    # Я проголосовал
+    def markup_im_vote():
+        markup = InlineKeyboardMarkup()
+        markup.row(
+            InlineKeyboardButton('За партийный список', callback_data='vote_party'),
+            InlineKeyboardButton('За одномандатника', callback_data='vote_district')
+        )
+        markup.add(InlineKeyboardButton('« Назад', callback_data='start'))
+        return markup
+    
+    # Я проголосовал НАДО ЗАРЕГАТЬСЯ
+    def markup_im_vote_need_reg():
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton('Регистрация избирателя', callback_data='want_to_registration'))
+        markup.add(InlineKeyboardButton('« Назад', callback_data='start'))
+        return markup
+    
+    # Вернуться к выбору бюллетеня
+    def markup_back_to_bul():
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton('« Назад', callback_data='im_vote'))
+        return markup
+    
+    # Вернуться к выбору бюллетеня
+    def markup_already_photo(vote: str):
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton('Удалить', callback_data=f'delete_photo_{vote}'))
+        markup.add(InlineKeyboardButton('« Назад', callback_data='start'))
+        return markup
