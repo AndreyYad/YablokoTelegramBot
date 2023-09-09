@@ -228,6 +228,7 @@ async def get_photo(msg: Message):
             await msg.photo[-1].download(destination_file='photo_vote/{}/{} {}.jpg'.format(vote, msg.from_id, sql_commands.grab_registration_data(msg.from_id)[0]))
             sql_commands.set_status(msg.from_id, 'none')
             await bot.edit_message_text(MESSAGES['already_get_photo'], msg.from_id, sql_commands.history_bot_msg(msg.from_id)[-1], reply_markup=markups.markup_registration_completed(), parse_mode='html')
+            logger.info(f"{msg.from_id}: фото добавлено (vote = {vote})")
     except exceptions.MessageNotModified:
         pass
 
@@ -342,6 +343,7 @@ async def callback(call):
             vote = call.data.replace('delete_photo_','')
             remove([f'photo_vote/{vote}/{name_file}' for name_file in listdir(f'photo_vote/{vote}') if name_file.startswith(str(user_id))][0])
             await send_msg(user_id, MESSAGES['delete_photo'], markup=markups.markup_registration_completed())
+            logger.info(f"{user_id}: фото удалено (vote = {vote})")
 
     except exceptions.MessageNotModified:
         pass
